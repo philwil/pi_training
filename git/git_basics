@@ -233,6 +233,26 @@ finish with a git push and the master repo is all upto date
 
 Master is the main branch. whenever updates are made to master phil will have to merge them in to his own branch.
 
+Lets add another user john to this system
+
+  git checkout master -b john
+  git push origin john
+
+
+That's it...
+
+John now has his own sandbox and can pull in any changes from master 
+whenever he needs them.
+
+  git checkout john
+  git merge master
+
+
+
+
+
+
+
 
 
 
