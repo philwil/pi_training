@@ -95,4 +95,12 @@ This now looks good.
 
 If we go back to the master branch look what happens to the git dir
 
+from the phil branch
+  
+  ls git
 
+  git_basics  git_basics~
+
+  git checkout master 
+
+  ls git
