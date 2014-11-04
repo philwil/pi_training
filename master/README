@@ -13,5 +13,28 @@ This will get the initial repository
 
 git checkout -b phil
 
-This will create your own branch of the master
+This will create your own branch of the master called phil
+
+
+Edit / add files as needed
+
+Use 
+  git add code/hello/hello.c
+  git add code/hello/Makefile
+
+To add a simple example
+
+  git commit -m " Added some simple code"
+
+Revert back to master
+
+  git checkout master
+
+
+Merge in the phil Branch
+
+  git merge phil
+
+Check the status
+  git status
 
