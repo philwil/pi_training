@@ -244,8 +244,18 @@ That's it...
 John now has his own sandbox and can pull in any changes from master 
 whenever he needs them.
 
+  git pull
+
   git checkout john
   git merge master
+
+  git push
+
+Thats it for the first session.
+
+
+
+
 
 
 
