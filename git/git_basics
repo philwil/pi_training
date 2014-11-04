@@ -221,6 +221,19 @@ Then simply merge in our branch
 
 finish with a git push and the master repo is all upto date
 
+    git push
+
+    Counting objects: 4, done.
+    Delta compression using up to 4 threads.
+    Compressing objects: 100% (2/2), done.
+    Writing objects: 100% (2/2), 291 bytes | 0 bytes/s, done.
+    Total 2 (delta 1), reused 0 (delta 0)
+    To git@github.com:philwil/pi_training.git
+      6225a9e..f2a75ce  master -> master
+
+Master is the main branch. whenever updates are made to master phil will have to merge them in to his own branch.
+
+
 
 
 
