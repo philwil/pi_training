@@ -122,7 +122,59 @@ Saving our work.
 
 git commit will save our work on the local system but will not update the repo on git hub.
 
- switch 
+switch back to the master branch and add the notes/README file
+  git checkut master
+ 
+
+  mkdir notes
+
+  touch notes/README
+
+  git add notes/README
+
+  git commit -m " added notes"
+     [master 6225a9e]  added notes
+      1 file changed, 0 insertions(+), 0 deletions(-)
+      create mode 100644 notes/README
+
+
+Now this needs to be pushed back to github
+Note that we used this command first , more about that later.
+ 
+  git config --global push.default matching
+
+Then
+
+  git push
+    Counting objects: 4, done.
+    Delta compression using up to 4 threads.
+    Compressing objects: 100% (2/2), done.
+    Writing objects: 100% (3/3), 299 bytes | 0 bytes/s, done.
+    Total 3 (delta 1), reused 0 (delta 0)
+    To git@github.com:philwil/pi_training.git
+    346a453..6225a9e  master -> master
+
+
+Now github contains the new notes/README file but what about phil's work ?
+
+Well that is all stashed on the phil branch. He is not ready to merge it into the master branch but he does want to keep his work on github.
+
+Simple simply do this from the local git repo
+
+    git push origin phil
+    Counting objects: 23, done.
+    Delta compression using up to 4 threads.
+    Compressing objects: 100% (16/16), done.
+    Writing objects: 100% (21/21), 3.05 KiB | 0 bytes/s, done.
+    Total 21 (delta 4), reused 0 (delta 0)
+    To git@github.com:philwil/pi_training.git
+    * [new branch]      phil -> phil
+
+
+so we switch back to the phil branch and continue with this work.
+
+
+
 
 
  
