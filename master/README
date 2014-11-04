@@ -4,4 +4,14 @@ This is the master directory of the pi training material.
 Each user will create their own clone of this master directory.
 We'll work out exactly how in a few days.
 
- 
+
+Some simple git commands
+
+git clone git@github.com:philwil/pi_training.git
+
+This will get the initial repository
+
+git checkout -b phil
+
+This will create your own branch of the master
+
