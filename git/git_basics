@@ -173,6 +173,38 @@ Simple simply do this from the local git repo
 
 so we switch back to the phil branch and continue with this work.
 
+   git checkout phil
+
+save our work
+then 
+   git commit -a -m " updates"
+
+   git commit -a -m " updates"
+    [phil df6fa65]  updates
+    1 file changed, 53 insertions(+), 1 deletion(-)
+
+Now because we used this option 
+  git config --global push.default matching
+
+A simple git push will save changes to oour branch on github
+
+
+   git push
+
+   Counting objects: 8, done.
+   Delta compression using up to 4 threads.
+   Compressing objects: 100% (3/3), done.
+   Writing objects: 100% (4/4), 1.05 KiB | 0 bytes/s, done.
+   Total 4 (delta 1), reused 0 (delta 0)
+   To git@github.com:philwil/pi_training.git
+      4fbc9f4..df6fa65  phil -> phil
+
+So now we have the master and our local branch called phil.
+On the local phil branch we have the git/git_basics file
+Both the master and the phil branches are on github.
+
+But we like the work we have done on phil and want to add that back to the master.
+
 
 
 
