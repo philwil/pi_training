@@ -104,3 +104,25 @@ from the phil branch
   git checkout master 
 
   ls git
+
+  git_basics~
+
+Oops our new file git_basics has gone.
+
+It will come back as good as new when we check out out branch again.
+
+   git checkout phil
+
+   ls git
+
+   git_basics git_basics~
+
+
+Saving our work.
+
+git commit will save our work on the local system but will not update the repo on git hub.
+
+ switch 
+
+
+ 
