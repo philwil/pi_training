@@ -67,4 +67,32 @@ And check again using git status
 
 Hmm not quite what we want , Lets remove the unwanted files #git_basics# and .#git_basics# and add in the file we want
 
-git 
+Here is the sequence
+
+   git rm git/#git_basics#
+     error: the following file has local modifications:
+       git/#git_basics#
+     (use --cached to keep the file, or -f to force removal)
+
+  git rm -f git/#git_basics#
+    rm 'git/#git_basics#'
+
+  git rm -f git/.#git_basics
+    rm 'git/.#git_basics'
+
+  git add git/git_basics
+
+Dont forget to commit the changes
+
+  git commit -m " corrected the addition of basics"
+   [phil 740fe47]  corrected the addition of basics
+     3 files changed, 70 insertions(+), 34 deletions(-)
+     delete mode 100644 git/#git_basics#
+     delete mode 120000 git/.#git_basics
+     create mode 100644 git/git_basics
+
+This now looks good.
+
+If we go back to the master branch look what happens to the git dir
+
+
