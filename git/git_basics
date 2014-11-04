@@ -1,0 +1,213 @@
+Here are some basic instructions for using git in this training session.
+
+First you get the git repo from github
+
+   git clone git@github.com:philwil/pi_training.git
+
+Thie will create a durectory called pi_training and place the git repository there.
+
+   cd into the pi_training directory and you will be on the master branch.
+
+This is the place where the class sources are kept.
+
+Use git status to see what's happening.
+
+  git status
+
+  On branch master
+  Your branch is up-to-date with 'origin/master'.
+
+  Untracked files:
+    (use "git add <file>..." to include in what will be committed)
+
+ 	git/
+
+  nothing added to commit but untracked files present (use "git add" to track)
+ 
+
+You can see that we are on the master branch but we have a new , untracked dir called git which also holds this file "git_basics".
+
+I am workng on this file and I am not yet ready to have it added to the master branch.
+
+So I will create a branch or copy of the master repo.
+
+   git checkout -b phil
+
+Lets add this file to phil's branch, infact we add the whole directory.
+
+  git add git
+
+Any time we add stuff we have to commit.
+
+
+
+   git commit -m " added git stuff"
+     [phil 563a6b8]  added git stuff
+     2 files changed, 34 insertions(+)
+     create mode 100644 git/#git_basics#
+     create mode 120000 git/.#git_basics
+
+And check again using git status
+
+  git status
+  On branch phil
+  Changes not staged for commit:
+    (use "git add <file>..." to update what will be committed)
+    (use "git checkout -- <file>..." to discard changes in working directory)
+
+	modified:   git/#git_basics#
+
+  Untracked files:
+    (use "git add <file>..." to include in what will be committed)
+
+	git/git_basics
+
+  no changes added to commit (use "git add" and/or "git commit -a")
+
+
+Hmm not quite what we want , Lets remove the unwanted files #git_basics# and .#git_basics# and add in the file we want
+
+Here is the sequence
+
+   git rm git/#git_basics#
+     error: the following file has local modifications:
+       git/#git_basics#
+     (use --cached to keep the file, or -f to force removal)
+
+  git rm -f git/#git_basics#
+    rm 'git/#git_basics#'
+
+  git rm -f git/.#git_basics
+    rm 'git/.#git_basics'
+
+  git add git/git_basics
+
+Dont forget to commit the changes
+
+  git commit -m " corrected the addition of basics"
+   [phil 740fe47]  corrected the addition of basics
+     3 files changed, 70 insertions(+), 34 deletions(-)
+     delete mode 100644 git/#git_basics#
+     delete mode 120000 git/.#git_basics
+     create mode 100644 git/git_basics
+
+This now looks good.
+
+If we go back to the master branch look what happens to the git dir
+
+from the phil branch
+  
+  ls git
+
+  git_basics  git_basics~
+
+  git checkout master 
+
+  ls git
+
+  git_basics~
+
+Oops our new file git_basics has gone.
+
+It will come back as good as new when we check out out branch again.
+
+   git checkout phil
+
+   ls git
+
+   git_basics git_basics~
+
+
+Saving our work.
+
+git commit will save our work on the local system but will not update the repo on git hub.
+
+switch back to the master branch and add the notes/README file
+  git checkut master
+ 
+
+  mkdir notes
+
+  touch notes/README
+
+  git add notes/README
+
+  git commit -m " added notes"
+     [master 6225a9e]  added notes
+      1 file changed, 0 insertions(+), 0 deletions(-)
+      create mode 100644 notes/README
+
+
+Now this needs to be pushed back to github
+Note that we used this command first , more about that later.
+ 
+  git config --global push.default matching
+
+Then
+
+  git push
+    Counting objects: 4, done.
+    Delta compression using up to 4 threads.
+    Compressing objects: 100% (2/2), done.
+    Writing objects: 100% (3/3), 299 bytes | 0 bytes/s, done.
+    Total 3 (delta 1), reused 0 (delta 0)
+    To git@github.com:philwil/pi_training.git
+    346a453..6225a9e  master -> master
+
+
+Now github contains the new notes/README file but what about phil's work ?
+
+Well that is all stashed on the phil branch. He is not ready to merge it into the master branch but he does want to keep his work on github.
+
+Simple simply do this from the local git repo
+
+    git push origin phil
+    Counting objects: 23, done.
+    Delta compression using up to 4 threads.
+    Compressing objects: 100% (16/16), done.
+    Writing objects: 100% (21/21), 3.05 KiB | 0 bytes/s, done.
+    Total 21 (delta 4), reused 0 (delta 0)
+    To git@github.com:philwil/pi_training.git
+    * [new branch]      phil -> phil
+
+
+so we switch back to the phil branch and continue with this work.
+
+   git checkout phil
+
+save our work
+then 
+   git commit -a -m " updates"
+
+   git commit -a -m " updates"
+    [phil df6fa65]  updates
+    1 file changed, 53 insertions(+), 1 deletion(-)
+
+Now because we used this option 
+  git config --global push.default matching
+
+A simple git push will save changes to oour branch on github
+
+
+   git push
+
+   Counting objects: 8, done.
+   Delta compression using up to 4 threads.
+   Compressing objects: 100% (3/3), done.
+   Writing objects: 100% (4/4), 1.05 KiB | 0 bytes/s, done.
+   Total 4 (delta 1), reused 0 (delta 0)
+   To git@github.com:philwil/pi_training.git
+      4fbc9f4..df6fa65  phil -> phil
+
+So now we have the master and our local branch called phil.
+On the local phil branch we have the git/git_basics file
+Both the master and the phil branches are on github.
+
+But we like the work we have done on phil and want to add that back to the master.
+
+
+
+
+
+
+ 
