@@ -1,0 +1,70 @@
+Here are some basic instructions for using git in this training session.
+
+First you get the git repo from github
+
+   git clone git@github.com:philwil/pi_training.git
+
+Thie will create a durectory called pi_training and place the git repository there.
+
+   cd into the pi_training directory and you will be on the master branch.
+
+This is the place where the class sources are kept.
+
+Use git status to see what's happening.
+
+  git status
+
+  On branch master
+  Your branch is up-to-date with 'origin/master'.
+
+  Untracked files:
+    (use "git add <file>..." to include in what will be committed)
+
+ 	git/
+
+  nothing added to commit but untracked files present (use "git add" to track)
+ 
+
+You can see that we are on the master branch but we have a new , untracked dir called git which also holds this file "git_basics".
+
+I am workng on this file and I am not yet ready to have it added to the master branch.
+
+So I will create a branch or copy of the master repo.
+
+   git checkout -b phil
+
+Lets add this file to phil's branch, infact we add the whole directory.
+
+  git add git
+
+Any time we add stuff we have to commit.
+
+
+
+   git commit -m " added git stuff"
+     [phil 563a6b8]  added git stuff
+     2 files changed, 34 insertions(+)
+     create mode 100644 git/#git_basics#
+     create mode 120000 git/.#git_basics
+
+And check again using git status
+
+  git status
+  On branch phil
+  Changes not staged for commit:
+    (use "git add <file>..." to update what will be committed)
+    (use "git checkout -- <file>..." to discard changes in working directory)
+
+	modified:   git/#git_basics#
+
+  Untracked files:
+    (use "git add <file>..." to include in what will be committed)
+
+	git/git_basics
+
+  no changes added to commit (use "git add" and/or "git commit -a")
+
+
+Hmm not quite what we want , Lets remove the unwanted files #git_basics# and .#git_basics# and add in the file we want
+
+git 
