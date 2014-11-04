@@ -38,3 +38,8 @@ Merge in the phil Branch
 Check the status
   git status
 
+Push the combined master back to github
+
+  git push
+
+
