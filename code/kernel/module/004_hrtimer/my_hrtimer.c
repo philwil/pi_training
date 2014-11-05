@@ -9,7 +9,8 @@
 #include <linux/hrtimer.h>	/* Needed for the timer api */
 #include <linux/ktime.h>	/* Needed for the timer api */
 
-#define MS_TO_NS(x)	(x * 1E6L)
+//#define MS_TO_NS(x)	(x * 1E6L)
+#define MS_TO_NS(x)	(x * 1000000)
 
 static struct hrtimer my_hrtimer;
 
