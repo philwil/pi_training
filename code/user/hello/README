@@ -1,0 +1,9 @@
+This is the most basic user program.
+I have added some additional options to the simple hello example.
+
+Look in hello.c and try it out.
+This is not target specific so it will even work on an x86 system.
+
+( To test this just type make)
+
+ 
