@@ -1,0 +1,44 @@
+This introduces the concept of module params.
+
+these are used to set up run time parameters for a module both at load time 
+and during the module execution
+ 
+Example of a typical build
+
+make
+make -C /lib/modules/3.13.0-37-generic/build M=/home/phil/work/pi_training/code/kernel/module/param modules
+make[1]: Entering directory `/usr/src/linux-headers-3.13.0-37-generic'
+  CC [M]  /home/phil/work/pi_training/code/kernel/module/param/my_param.o
+  Building modules, stage 2.
+  MODPOST 1 modules
+  CC      /home/phil/work/pi_training/code/kernel/module/param/my_param.mod.o
+  LD [M]  /home/phil/work/pi_training/code/kernel/module/param/my_param.ko
+make[1]: Leaving directory `/usr/src/linux-headers-3.13.0-37-generic'
+
+Run this with
+
+   sudo insmod ./my_param.ko foo=21
+
+to add the module to the kernel
+Then we have to be root to modify the parameter
+
+sudo su  ,, to get to root
+#
+echo 33 > /sys/module/my_param/parameters/foo
+
+ctrl-D  << to get back
+
+and
+
+   sudo rmmod ./my_param.ko
+
+to remove the module from the kernel
+
+The printk output is placed in /var/log/messages
+
+You can use the "dmesg" command to look at this output
+
+dmesg
+[...]
+[9288.565590] Hello, my_param: foo started as  21
+[89298.275579] Goodbye, my_param foo is now 33
