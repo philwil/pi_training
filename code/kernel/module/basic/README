@@ -1,0 +1,29 @@
+Example of a typical build
+
+make
+make -C /lib/modules/3.13.0-37-generic/build M=/home/phil/work/pi_training/code/kernel/module/basic modules
+make[1]: Entering directory `/usr/src/linux-headers-3.13.0-37-generic'
+  CC [M]  /home/phil/work/pi_training/code/kernel/module/basic/my_mod.o
+  Building modules, stage 2.
+  MODPOST 1 modules
+  CC      /home/phil/work/pi_training/code/kernel/module/basic/my_mod.mod.o
+  LD [M]  /home/phil/work/pi_training/code/kernel/module/basic/my_mod.ko
+make[1]: Leaving directory `/usr/src/linux-headers-3.13.0-37-generic'
+
+Run this with
+
+   sudo insmod ./my_mod.ko
+
+to add the module to the kernel
+and
+
+   sudo rmmod ./my_mod.ko
+to remove the module from the kernel
+
+The printk output placed in /var/log/messages
+You can use the "dmesg" command to look at this output
+
+dmesg
+[...]
+[9288.565590] Hello, my_mod
+[89298.275579] Goodbye, my_mod
