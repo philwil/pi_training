@@ -1,0 +1,59 @@
+This introduces a simple kernel timer.
+
+These can be used to run simple functions on a periodic basis
+ 
+Example of a typical build
+
+make
+make -C /lib/modules/3.13.0-37-generic/build M=/home/phil/work/pi_training/code/kernel/module/timer modules
+make[1]: Entering directory `/usr/src/linux-headers-3.13.0-37-generic'
+  CC [M]  /home/phil/work/pi_training/code/kernel/module/param/my_timer.o
+  Building modules, stage 2.
+  MODPOST 1 modules
+  CC      /home/phil/work/pi_training/code/kernel/module/param/my_timer.mod.o
+  LD [M]  /home/phil/work/pi_training/code/kernel/module/param/my_timer.ko
+make[1]: Leaving directory `/usr/src/linux-headers-3.13.0-37-generic'
+
+Run this with
+
+   sudo insmod ./my_timer.ko timer=2000
+
+to add the module to the kernel
+Then we have to be root to modify the timer parameter
+
+sudo su  to get to root
+#
+echo 4000 > /sys/module/my_timer/parameters/timer
+cat /sys/module/my_timer/parameters/count
+
+ctrl-D  << to get back
+
+and
+
+   sudo rmmod ./my_timer.ko
+
+to remove the module from the kernel
+
+The printk output is placed in /var/log/messages
+
+You can use the "dmesg" command to look at this output
+
+dmesg
+[...]
+[123376.966822] Hello, my_timer timer started as 200
+[123376.966828] Starting timer to fire in 200 ms (30809397)
+[123377.165307] my_timer_callback called (30809447) count (0).
+[123377.365116] my_timer_callback called (30809497) count (1).
+[123377.564854] my_timer_callback called (30809547) count (2).
+[123377.764594] my_timer_callback called (30809597) count (3).
+[123377.963916] my_timer_callback called (30809647) count (4).
+[...]
+[123388.159027] my_timer_callback called (30812199) count (55).
+[123388.358723] my_timer_callback called (30812249) count (56).
+[123388.558552] my_timer_callback called (30812299) count (57).
+[123388.757844] my_timer_callback called (30812349) count (58).
+[123388.958056] my_timer_callback called (30812399) count (59).
+[123389.157316] my_timer_callback called (30812449) count (60).
+[123389.219730] Goodbye, my_timer count finished as 61
+[123389.219735] The timer is still in use...
+
