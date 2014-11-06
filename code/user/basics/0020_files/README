@@ -1,0 +1,16 @@
+Files are one of the key components in a unix system
+
+Not only can you use them to store programs and data but they are also one of the components used to control system interfaces.
+
+There are two basic methods to access a file. Or rather associate a file name with one of two sorts of handles.
+
+
+The basic file handler uses open/close/read/write/ioctl and mmap commands to handle data
+
+file_101.c deals with those interfaces
+
+The stream file ahndler is very convenient for handling file data as a stream object
+Here we use the fopen/fclose commands together woth the fread, fwrite, fgets, fprintf etc commands
+
+Look in file_201.c for that stuff.
+
