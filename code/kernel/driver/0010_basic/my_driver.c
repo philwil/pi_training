@@ -83,16 +83,20 @@ void driver_cleanup_module(void)
 	    {
 		//scull_trim(scull_devices + i);
 		cdev_del(&my_devices[i].cdev);
+		if(driver_class)
+		{
+		    device_destroy(driver_class
+				   , MKDEV(driver_major, driver_minor+i));
+		}
 	    }
 	    kfree(my_devices);
 	}
 
         if(driver_class)
-	  {
-	    device_destroy(driver_class, devno);
+	{
 	    class_destroy(driver_class);
 	    driver_class =  NULL;
-	  }
+	}
 	//scull_remove_proc();
  
 
@@ -125,17 +129,17 @@ static int driver_setup_cdev(struct driver_dev *dev, struct class * class, int i
 		printk(KERN_NOTICE "NOTE added driver %d\n", index);
 
         if (!err)
-	  {
+	{
 	    device=device_create(class, NULL, devno, NULL, DRIVER_NAME "%d", driver_minor+index);
 	    if (IS_ERR(device))
-	      {
+	    {
 		err = PTR_ERR(device);
 		printk(KERN_WARNING "Error %d while trying to create %s%d\n",
 		       err, DRIVER_NAME, driver_minor+index);
 		cdev_del(&dev->cdev);
 		return err;
-	      }
-	  }
+	    }
+	}
 	return 0;
 }
 
