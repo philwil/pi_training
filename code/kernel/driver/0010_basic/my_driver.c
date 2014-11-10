@@ -89,9 +89,9 @@ void driver_cleanup_module(void)
 
         if(driver_class)
 	  {
+	    device_destroy(driver_class, devno);
 	    class_destroy(driver_class);
 	    driver_class =  NULL;
-
 	  }
 	//scull_remove_proc();
  
