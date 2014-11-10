@@ -1,0 +1,27 @@
+Simple Driver
+=============
+
+
+1/ make the device
+2/ basic open/close/read/write
+3/ add proc
+4/ add ioctl
+5/ add mmap
+
+
+
+Run this with
+
+   sudo insmod ./my_driver.ko
+
+to add the module to the kernel
+and
+
+   sudo rmmod ./my_driver.ko
+to remove the module from the kernel
+
+The printk output placed in /var/log/messages
+You can use the "dmesg" command to look at this output
+
+dmesg
+[...]
