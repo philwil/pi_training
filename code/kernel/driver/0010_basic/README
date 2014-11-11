@@ -7,20 +7,27 @@ Simple Driver
      my_driver_01.c
 
 2/ basic open/close/read/write
+     my_driver_02.c
+
 3/ add proc
+     my_driver_03.c
+
 4/ add ioctl
+     my_driver_04.c
+
 5/ add mmap
+     my_driver_05.c
 
 
 
 Run this with
 
-   sudo insmod ./my_driver.ko
+   sudo insmod ./my_driver_xx.ko
 
 to add the module to the kernel
 and
 
-   sudo rmmod ./my_driver.ko
+   sudo rmmod ./my_driver_xx.ko
 to remove the module from the kernel
 
 The printk output placed in /var/log/messages
