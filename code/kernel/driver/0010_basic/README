@@ -3,6 +3,9 @@ Simple Driver
 
 
 1/ make the device
+     the driver makes the device nodes for you
+     my_driver_01.c
+
 2/ basic open/close/read/write
 3/ add proc
 4/ add ioctl
