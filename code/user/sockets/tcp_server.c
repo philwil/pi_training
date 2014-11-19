@@ -23,6 +23,9 @@ int main(int argc , char *argv[])
     int socket_desc , client_sock , c;
     struct sockaddr_in server , client;
     int my_port = MY_PORT;
+    char *client_ip;
+    int client_port;
+
      
     //Create socket
     socket_desc = socket(AF_INET , SOCK_STREAM , 0);
@@ -59,26 +62,31 @@ int main(int argc , char *argv[])
     c = sizeof(struct sockaddr_in);
     pthread_t thread_id;
 	
-    while( (client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) )
+    while((client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) )
       {
-      puts("Connection accepted");
-         
-      if( pthread_create( &thread_id , NULL ,  connection_handler , (void*) &client_sock) < 0)
-        {
-            perror("could not create thread");
+	client_ip = inet_ntoa(client.sin_addr);
+	client_port = ntohs(client.sin_port);
+	
+	printf("Connection accepted from [%s] port (%d)"
+	       , client_ip, (int)client_port);
+	
+	if( pthread_create(&thread_id, NULL
+			   ,  connection_handler, (void*) &client_sock) < 0)
+	  {
+	    perror("could not create thread");
             return 1;
-        }
-         
+	  }
+	
         //Now join the thread , so that we dont terminate before the thread
         //pthread_join( thread_id , NULL);
         puts("Handler assigned");
-    }
+      }
      
     if (client_sock < 0)
-    {
+      {
         perror("accept failed");
         return 1;
-    }
+      }
      
     return 0;
 }
