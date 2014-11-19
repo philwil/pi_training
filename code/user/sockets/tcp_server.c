@@ -107,16 +107,16 @@ void *connection_handler(void *socket_desc)
     snprintf(message, sizeof(message)
 	     ,"[%ld] Now type something and I shall repeat what you type \n"
 	     , (long)my_id);
-    write(sock , message , strlen(message));
+    write(sock, message, strlen(message));
      
     //Receive a message from client
-    while( (read_size = recv(sock , client_message , sizeof(client_message)-1 , 0)) > 0 )
+    while( (read_size = recv(sock, client_message, sizeof(client_message)-1 , 0)) > 0 )
     {
       //end of string marker
       client_message[read_size] = '\0';
 		
       //Send the message back to client
-      write(sock , client_message , strlen(client_message));
+      write(sock, client_message, strlen(client_message));
       
       //clear the message buffer
       memset(client_message, 0, 2000);

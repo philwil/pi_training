@@ -1,12 +1,14 @@
 /*****************************************************************
  *
- * This is the starting point for all out user code
- * This simple ecample is often used to make sure that we can build,
+ * This is the starting point for all our user code
+ * This simple example is often used to make sure that we can build,
  * deploy and run code on our target system
  * 
  * This code also checks out our embedded compiler and associated basic 
  * libraries.
  *   
+ * this code can be tested out on an x86 system.
+ *
  * Just to make it interesting we'll add a few options
  *****************************************************************/
  
