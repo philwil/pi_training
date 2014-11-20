@@ -151,6 +151,8 @@ int main( int argc, char * argv[])
   int i;
   init_objs();
   set_obj(&bos[0], 100, 0, 0, 0);
+  bos[0].xvel=1;
+  bos[0].yvel=1;
   set_obj(&bos[1], 100, 200, 200, 200);
   set_obj(&bos[2], 100, 0, 200, 200);
   print_objs(-1);
