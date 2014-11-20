@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stddef.h>
+#include <math.h>
+
 #include <unistd.h>
 // some test fuunctions
 
@@ -98,23 +100,30 @@ int calc_accels(int timep)
 	  if ((j != i) && (bos[j].mass > 0))
 	    {
 	      obj2 = &bos[j];
-	      double dist;
+	      double dist, dist2, distx, disty, distz;
+              double g_force;
               int xf;
-	      dist = obj2->xpos - obj1->xpos;
-	      xf = 1;if (dist < 0 ) xf = -1; 
-	      xforce += xf * (obj2->mass * g_const) / (dist * dist);
-	      dist = obj2->ypos - obj1->ypos;
-	      xf = 1;if (dist < 0 ) xf = -1; 
-	      yforce += xf * (obj2->mass * g_const) / (dist * dist);
-	      dist = obj2->zpos - obj1->zpos;
-	      xf = 1;if (dist < 0 ) xf = -1; 
-	      zforce += xf * (obj2->mass * g_const) / (dist * dist);
+	      distx = obj2->xpos - obj1->xpos;
+	      disty = obj2->ypos - obj1->ypos;
+	      distz = obj2->zpos - obj1->zpos;
+              dist2 = (distx*distx)+(disty*disty)+(distz*distz);
+              dist = sqrt(dist2);
+	      g_force = (obj2->mass * g_const) / dist2;
+
+	      xf = 1;if (distx < 0 ) xf = -1; 
+	      xforce += xf *  g_force * distx/dist;
+	      xf = 1;if (disty < 0 ) xf = -1; 
+	      yforce += xf *  g_force * disty/dist;
+	      xf = 1;if (distz < 0 ) xf = -1; 
+	      zforce += xf *  g_force * distz/dist;
 	      
 	    }
 	}
       if(obj1->mass > 0)
-	printf(" Moving %d xf= %f yf=%f zf=%f\n", i ,xforce, yforce, zforce);
-      move_obj(obj1, timep, xforce, yforce, zforce);
+	{
+	  printf(" Moving %d xf= %f yf=%f zf=%f\n", i ,xforce, yforce, zforce);
+	  move_obj(obj1, timep, xforce, yforce, zforce);
+	}
 
     }
   return 0;
