@@ -110,12 +110,9 @@ int calc_accels(int timep)
               dist = sqrt(dist2);
 	      g_force = (obj2->mass * g_const) / dist2;
 
-	      xf = 1;if (distx < 0 ) xf = -1; 
-	      xforce += xf *  g_force * distx/dist;
-	      xf = 1;if (disty < 0 ) xf = -1; 
-	      yforce += xf *  g_force * disty/dist;
-	      xf = 1;if (distz < 0 ) xf = -1; 
-	      zforce += xf *  g_force * distz/dist;
+	      xforce += (1 *  g_force * distx/dist);
+	      yforce += (1 *  g_force * disty/dist);
+	      zforce += (1 *  g_force * distz/dist);
 	      
 	    }
 	}
@@ -153,12 +150,13 @@ int main( int argc, char * argv[])
 {
   int i;
   init_objs();
-  set_obj(&bos[0], 100, 100, 100, 20);
-  set_obj(&bos[1], 100, 200, 200, 40);
+  set_obj(&bos[0], 100, 0, 0, 0);
+  set_obj(&bos[1], 100, 200, 200, 200);
+  set_obj(&bos[2], 100, 0, 200, 200);
   print_objs(-1);
   for (i = 0; i < 16 ; i++)
     {
-      calc_accels(1);
+      calc_accels(10);
       print_objs(i);
     }
   return 0;
