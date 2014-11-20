@@ -5,17 +5,17 @@
 
 typedef struct base_obj {
 
-  int xpos;
-  int ypos;
-  int zpos;
+  double xpos;
+  double ypos;
+  double zpos;
 
-  int xvel;
-  int yvel;
-  int zvel;
+  double xvel;
+  double yvel;
+  double zvel;
 
-  int xacc;
-  int yacc;
-  int zacc;
+  double xacc;
+  double yacc;
+  double zacc;
 
 
   int mass;
@@ -27,7 +27,7 @@ typedef struct base_obj {
 base_obj bos[NUM_OBJS];
 float g_const = 100;
 
-int set_obj(base_obj *obj, int mass, int xpos, int ypos, int zpos)
+int set_obj(base_obj *obj, int mass, double xpos, double ypos, double zpos)
 {
   obj->mass = mass;
 
@@ -40,25 +40,17 @@ int set_obj(base_obj *obj, int mass, int xpos, int ypos, int zpos)
   obj->zvel = 0;
 }
 
-int move_obj(base_obj *obj, int timep, int xforce, int yforce, int zforce)
+int move_obj(base_obj *obj, double timep, double xforce, double yforce, double zforce)
 {
   obj->xacc = 0;
   obj->yacc = 0;
   obj->zacc = 0;
 
-  if (xforce != 0)
-    {
-      obj->xacc = obj->mass / xforce;
-    }
-  if (yforce != 0)
-    {
-      obj->yacc = obj->mass / yforce;
-    }
-  if (zforce != 0)
-    {
-      obj->zacc = obj->mass / zforce;
-    }
 
+  obj->xacc = xforce / obj->mass ;
+  obj->yacc = yforce / obj->mass;
+  obj->zacc = zforce / obj->mass;
+  
   obj->xvel += obj->xacc * timep;
   obj->yvel += obj->yacc * timep;
   obj->zvel += obj->zacc * timep;
@@ -89,9 +81,9 @@ int calc_accels(int timep)
   int i,j;
   base_obj *obj1;
   base_obj *obj2;
-  int xforce;
-  int yforce;
-  int zforce;
+  double xforce;
+  double yforce;
+  double zforce;
   for (i = 0 ; i < NUM_OBJS; i++)
     {
       obj1 = &bos[i];
@@ -106,7 +98,7 @@ int calc_accels(int timep)
 	  if ((j != i) && (bos[j].mass > 0))
 	    {
 	      obj2 = &bos[j];
-	      int dist;
+	      double dist;
               int xf;
 	      dist = obj2->xpos - obj1->xpos;
 	      xf = 1;if (dist < 0 ) xf = -1; 
@@ -120,7 +112,8 @@ int calc_accels(int timep)
 	      
 	    }
 	}
-      if(obj1->mass > 0)printf(" Moving %d xf= %d yf=%d zf=%d\n", i ,xforce, yforce, zforce);
+      if(obj1->mass > 0)
+	printf(" Moving %d xf= %f yf=%f zf=%f\n", i ,xforce, yforce, zforce);
       move_obj(obj1, timep, xforce, yforce, zforce);
 
     }
@@ -137,7 +130,7 @@ int print_objs(int idx)
       obj = &bos[i];
       if( obj->mass > 0)
 	{
-	  printf(" item [%d] x=%d, y=%d, z=%d\n"
+	  printf(" item [%d] x=%f, y=%f, z=%f\n"
 		 , i
 		 , obj->xpos
 		 , obj->ypos
