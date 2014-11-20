@@ -19,20 +19,62 @@
 #include <fcntl.h>
 
 #define MY_PORT 8888 
+#define NUM_TCPS 16 
+
+struct tcp_service {
+  int sock;
+  struct sockaddr_in client;
+  struct sockaddr_in client_addr;
+  char client_ip[128];
+  int client_port;
+  pthread_t thread_id;
+  char message[132]; 
+  char client_message[2000];
+};
+
+struct tcp_service service[NUM_TCPS];
+
+void  init_services(void)
+{
+  int i;
+  struct tcp_service * tcp;
+  for (i=0; i< NUM_TCPS; i++)
+    {
+      tcp=&service[i];
+      tcp->sock = -1;
+    }
+}
+
+struct tcp_service *find_service(void)
+{
+  int i;
+  struct tcp_service * tcp;
+  for (i=0; i< NUM_TCPS; i++)
+    {
+      tcp=&service[i];
+      if(tcp->sock == -1) return tcp;
+    }
+  return NULL;
+}
 
 //the thread function
 void *connection_handler(void *);
  
 int s_flag = 0;
 int d_flag = 0;
-int fd=-1;
+char *device = NULL;
 
 int main(int argc , char *argv[])
 {
   int flags, opt;
   int port;
-  char *device = NULL;
+
   int my_port = MY_PORT;
+  int i;
+  struct tcp_service *tcp;
+  int fd=-1;
+
+  init_services();
 
   while ((opt = getopt(argc, argv, "sdp:D:")) != -1) {
         switch (opt) {
@@ -72,7 +114,8 @@ int main(int argc , char *argv[])
 	flags = O_RDWR;
 	fd = open(device, flags);
       }
-    //Create socket
+  
+  //Create socket
     socket_desc = socket(AF_INET , SOCK_STREAM , 0);
     if (socket_desc == -1)
     {
@@ -105,26 +148,34 @@ int main(int argc , char *argv[])
     //Accept and incoming connection
     puts("Waiting for incoming connections...");
     c = sizeof(struct sockaddr_in);
-    pthread_t thread_id;
+
 	
     while((client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) )
       {
-	client_ip = inet_ntoa(client.sin_addr);
-	client_port = ntohs(client.sin_port);
-	
-	printf("Connection accepted from [%s] port (%d)"
-	       , client_ip, (int)client_port);
-	
-	if( pthread_create(&thread_id, NULL
-			   ,  connection_handler, (void*) &client_sock) < 0)
+	tcp=find_service();
+	if (tcp)
 	  {
-	    perror("could not create thread");
-            return 1;
-	  }
+	    tcp->client = client;
+	    tcp->sock = client_sock;
+	    client_ip = inet_ntoa(client.sin_addr);
+	    snprintf(tcp->client_ip, sizeof(tcp->client_ip), "%s", client_ip);
+	    tcp->client_port = ntohs(client.sin_port);
 	
-        //Now join the thread , so that we dont terminate before the thread
-        //pthread_join( thread_id , NULL);
-        puts("Handler assigned");
+	    printf("Connection accepted from [%s] port (%d)"
+		   , client_ip, (int)client_port);
+	
+	    
+	    if( pthread_create(&tcp->thread_id, NULL
+			   ,  connection_handler, (void*)tcp) < 0)
+	      {
+		perror("could not create thread");
+		return 1;
+	      }
+	
+	    //Now join the thread , so that we dont terminate before the thread
+	    //pthread_join( thread_id , NULL);
+	    puts("Handler assigned");
+	  }
       }
      
     if (client_sock < 0)
@@ -141,38 +192,49 @@ int main(int argc , char *argv[])
 /*
  * This will handle connection for each client
  * */
-void *connection_handler(void *socket_desc)
+void *connection_handler(void *data)
 {
 
+    struct tcp_service *tcp = (struct tcp_service *)data;
     //Get the socket descriptor
-    int sock = *(int*)socket_desc;
+    int sock = tcp->sock;
     int read_size;
     int rc;
-    char message[132] , client_message[2000];
-    pthread_t my_id = pthread_self();
+    int fd=-1;
+    int flags;
 
+    pthread_t my_id = pthread_self();
+    
     pthread_detach(my_id);
+    if(device != NULL)
+      {
+	flags = O_RDWR;
+	fd = open(device, flags);
+      }
 
     //Send some messages to the client
-    snprintf(message, sizeof(message)
+    snprintf(tcp->message, sizeof(tcp->message)
 	     ,"Greetings from %ld! I am your connection handler\n"
 	     , (long)my_id);
 
-    write(sock , message , strlen(message));
-     
-    snprintf(message, sizeof(message)
+    rc = write(sock , tcp->message , strlen(tcp->message));
+    
+    snprintf(tcp->message, sizeof(tcp->message)
 	     ,"[%ld] Now type something and I shall repeat what you type \n"
 	     , (long)my_id);
-    write(sock, message, strlen(message));
+    rc = write(sock, tcp->message, strlen(tcp->message));
+
     while((fd >= 0) && (s_flag==1))
       {
-	read_size = read(fd, client_message, sizeof(client_message)-1);
+	read_size = read(fd, tcp->client_message
+			 , sizeof(tcp->client_message)-1);
 	if (read_size > 0)
 	  {
-	    rc = write(sock, client_message, read_size);
+	    rc = write(sock, tcp->client_message, read_size);
 	  }
 	else
 	  {
+            close(fd);
 	    fd = -1;
 	    close(sock);
 	    sock = -1;
@@ -181,11 +243,12 @@ void *connection_handler(void *socket_desc)
 
     while((fd >= 0) && (d_flag==1))
       {
-	read_size = recv(sock, client_message, sizeof(client_message), 0);
+	read_size = recv(sock, tcp->client_message
+			 , sizeof(tcp->client_message), 0);
 
 	if (read_size > 0)
 	  {
-	    rc = write(fd, client_message, read_size);
+	    rc = write(fd, tcp->client_message, read_size);
 	  }
 	else
 	  {
@@ -196,19 +259,21 @@ void *connection_handler(void *socket_desc)
 	  }
       }
     read_size = 0;
+    
     if(sock > 0)
       {
     //Receive a message from client
-	while( (read_size = recv(sock, client_message, sizeof(client_message)-1 , 0)) > 0 )
+	while( (read_size = recv(sock, tcp->client_message
+				 , sizeof(tcp->client_message)-1 , 0)) > 0 )
 	  {
 	    //end of string marker
-	    client_message[read_size] = '\0';
+	    tcp->client_message[read_size] = '\0';
 	    
 	    //Send the message back to client
-	    write(sock, client_message, strlen(client_message));
+	    write(sock, tcp->client_message, read_size);
 	    
 	    //clear the message buffer
-	    memset(client_message, 0, 2000);
+	    memset(tcp->client_message, 0, sizeof(tcp->client_message));
 	  }
       }
     if(read_size == 0)
@@ -221,5 +286,6 @@ void *connection_handler(void *socket_desc)
         perror("recv failed");
       }
          
+    tcp->sock = -1;
     return 0;
 } 
