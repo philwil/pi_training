@@ -95,6 +95,7 @@ int calc_accels(int timep)
   for (i = 0 ; i < NUM_OBJS; i++)
     {
       obj1 = &bos[i];
+      if (obj1->mass == 0) continue;
       xforce = 0;
       yforce = 0;
       zforce = 0;
