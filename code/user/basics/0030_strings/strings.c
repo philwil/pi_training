@@ -29,43 +29,46 @@ char cmd_str[1024];
 char *cmd_tags[NUM_TAGS];
 
 
-int run_cmd1(void * data, int cargc, char **cargv);
-int run_cmd2(void * data, int cargc, char **cargv);
-int run_cmd3(void * data, int cargc, char **cargv);
-int run_cmd4(void * data, int cargc, char **cargv);
+
 
 typedef struct cmd_fcns {
   const char *key;
-  int (*handler)(void * data, int argc, char **argv);
+  int (*handler)(void *data, void *cdata, int argc, char **argv);
+  void * cdata;
 } cmd_fcns_t;
 
+int run_cmd1(void *data, void *cdata, int cargc, char **cargv);
+int run_cmd2(void *data, void *cdata, int cargc, char **cargv);
+int run_cmd3(void *data, void *cdata, int cargc, char **cargv);
+int run_cmd4(void *data, void *cdata, int cargc, char **cargv);
+
 cmd_fcns_t cmds[] = {
-    { "cmd_1", run_cmd1},
-    { "cmd_2", run_cmd2},
-    { "cmd_3", run_cmd3},
-    { "cmd_4", run_cmd4},
-    { NULL, NULL},
+  { "cmd_1", run_cmd1, NULL},
+    { "cmd_2", run_cmd2, NULL},
+    { "cmd_3", run_cmd3, NULL},
+    { "cmd_4", run_cmd4, NULL},
+    { NULL, NULL, NULL},
   };
 
-int run_cmd1(void * data, int cargc, char **cargv)
+int run_cmd1(void *data, void *cdata, int cargc, char **cargv)
 {
   printf(" cmd [%s] running argc (%d)\n", cargv[0], cargc);
   return 0;
 }
 
-int run_cmd2(void * data, int cargc, char **cargv)
+int run_cmd2(void * data, void *cdata, int cargc, char **cargv)
 {
   printf(" cmd [%s] running argc (%d)\n", cargv[0], cargc);
   return 0;
 }
 
-int run_cmd3(void * data, int cargc, char **cargv)
+int run_cmd3(void * data, void *cdata, int cargc, char **cargv)
 {
   printf(" cmd [%s] running argc (%d)\n", cargv[0], cargc);
   return 0;
 }
 
-int run_cmd4(void * data, int cargc, char **cargv)
+int run_cmd4(void * data, void *cdata, int cargc, char **cargv)
 {
   printf(" cmd [%s] running argc (%d)\n", cargv[0], cargc);
   return 0;
@@ -73,7 +76,7 @@ int run_cmd4(void * data, int cargc, char **cargv)
 
  
 
-int decode_cmd(char *cmd_sp)
+int decode_cmd(char *cmd_sp , void *data)
 {
   cmd_fcns_t *cmd;
   int ix = 0;
@@ -83,7 +86,6 @@ int decode_cmd(char *cmd_sp)
   sep_sp = strstr(sp, CMD_SEP);
   while ((sep_sp != NULL) && ( ix < NUM_TAGS)) 
     {
-
       *sep_sp=0;
       printf(" found cmd_tag (%d) [%s]\n", ix, cmd_tags[ix]);
       ix++;
@@ -100,21 +102,21 @@ int decode_cmd(char *cmd_sp)
       if(strcmp(cmd->key, cmd_tags[0])==0) 
 	{
 	  printf(" ***found command [%s] \n", cmd->key);
-	  cmd->handler(NULL,ix, cmd_tags);
+	  cmd->handler(data, (void *)cmd, ix, cmd_tags);
 	  break;
 	}
       cmd++;
     }
-
   return ix;
 }
 
-int process_cmd(char *cmd_sp, int len, char *new_sp)
+int process_cmd(char *cmd_sp, int len, char *new_sp, void *data)
 {
   int rc=0;
   char *term_sp;
   char *cmd_cpy;
   char *cmd_rep;
+
   if(new_sp)
     {
       snprintf (&cmd_sp[strlen(cmd_sp)]
@@ -134,7 +136,7 @@ int process_cmd(char *cmd_sp, int len, char *new_sp)
       *cmd_rep = 0;
       printf(" command found [%s] string left [%s] \n", cmd_cpy, cmd_sp);
     
-      decode_cmd(cmd_cpy);
+      decode_cmd(cmd_cpy, data);
       free(cmd_cpy);
       rc = 1;
     }
@@ -163,7 +165,7 @@ int main(int argc, char *argv[])
       sp = argv[i];
       while (rc > 0)
 	{ 
-	  rc = process_cmd(cmd_str, sizeof(cmd_str), sp);
+	  rc = process_cmd(cmd_str, sizeof(cmd_str), sp, NULL);
 	  sp = NULL;
 	}
     }
