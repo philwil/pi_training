@@ -34,7 +34,7 @@ char cmd_str[1024];
 char *cmd_tags[NUM_TAGS];
 char *cmd_list[NUM_CMDS];
 
-
+int debug = 0;
 
 
 typedef struct cmd_fcns {
@@ -80,7 +80,50 @@ int run_cmd4(void *data, void *cdata, int cargc, char **cargv)
   return 0;
 }
 
- 
+int decode_fixed_cmds(char *cmd_cpy, void *data)
+{
+  int rc = 0;
+  int i;
+  if(strncmp(cmd_cpy, "$$list", strlen("$$list")) == 0 )
+    {
+      rc = 1;
+      printf( "command list\n");
+      for(i=0; i < cmd_num; i++)
+	{
+	  printf(" command [%d] [%s]\n",i ,cmd_list[i]);
+	}
+      printf( "\n\n");
+    }
+  else if(strncmp(cmd_cpy, "$$del", strlen("$$del")) == 0 )
+    {
+      rc = 1;
+      for(i=0; i < cmd_num; i++)
+	{
+	  free(cmd_list[i]);
+	  cmd_list[i]=NULL;
+	}
+      cmd_num = 0;
+      printf( "command list deleted\n");
+    }
+  else if(strncmp(cmd_cpy, "$$run", strlen("$$run")) == 0 )
+    {
+      rc = 1;
+      
+      for(i=0; i < cmd_num; i++)
+	{
+	  decode_cmd(cmd_list[i], data);
+	}
+    }
+  else if(strncmp(cmd_cpy, "$$debug", strlen("$$debug")) == 0 )
+    {
+      rc = 1;
+      if(debug) 
+	debug = 0;
+      else
+	debug = 1;
+    }
+  return rc;
+}
 
 int decode_cmd(char *cmd_sp , void *data)
 {
@@ -90,7 +133,7 @@ int decode_cmd(char *cmd_sp , void *data)
   char *sep_sp;
   char *sp;
   char *cmd_save = strdup(cmd_sp);
-  printf(" running command [%s]\n", cmd_save);
+  if(debug)printf(" running command [%s]\n", cmd_save);
   sp = cmd_save;
 
   cmd_tags[ix]=sp;
@@ -141,37 +184,9 @@ int process_cmd(char *cmd_sp, int len, char *new_sp, void *data)
       cmd_cpy[term_sp-cmd_sp]=0;
       // handle special commands here
       //$$list
-      //$$del
-      if(strncmp(cmd_cpy, "$$list", strlen("$$list")) == 0 )
-	{
-
-	  printf( "command list\n");
-	  for(i=0; i < cmd_num; i++)
-	    {
-	      printf(" command [%d] [%s]\n",i ,cmd_list[i]);
-	    }
-	  printf( "\n\n");
-	}
-      else if(strncmp(cmd_cpy, "$$del", strlen("$$del")) == 0 )
-	{
-	  for(i=0; i < cmd_num; i++)
-	    {
-	      free(cmd_list[i]);
-	      cmd_list[i]=NULL;
-	    }
-	  cmd_num = 0;
-	  printf( "command list deleted\n");
-	}
-      else if(strncmp(cmd_cpy, "$$run", strlen("$$run")) == 0 )
+      //$$del  .. etc
+      if(!decode_fixed_cmds(cmd_cpy,data))
       {
-	  for(i=0; i < cmd_num; i++)
-	  {
-	      decode_cmd(cmd_list[i], data);
-	  }
-      }
-      else
-      {
-
 	  cmd_list[cmd_num] = cmd_cpy;
 	  cmd_num++;
       }
