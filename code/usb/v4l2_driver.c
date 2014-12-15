@@ -411,12 +411,26 @@ char *fmtdesc2s(unsigned flags)
 // V4L2_BUF_TYPE_VIDEO_CAPTURE   
 // V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE
 
+typedef struct v4l_frames
+{
+  int width;
+  int height;
+  unsigned int pixel_format;
+  float numerator;
+  float denominator;
+
+} v4l_frames_t;
+
+struct v4l_frames v4l_frames[1024];
+
 static void print_video_formats_ext(int fd, enum v4l2_buf_type type)
 {
   struct v4l2_fmtdesc fmt;
   struct v4l2_frmsizeenum frmsize;
   struct v4l2_frmivalenum frmival;
-  
+  struct v4l_frames *fram;
+
+  int fram_ix = 0;  
   fmt.index = 0;
   fmt.type = type;
   while (xioctl(fd, VIDIOC_ENUM_FMT, &fmt) >= 0) {
@@ -437,6 +451,14 @@ static void print_video_formats_ext(int fd, enum v4l2_buf_type type)
 	frmival.width = frmsize.discrete.width;
 	frmival.height = frmsize.discrete.height;
 	while (xioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, &frmival) >= 0) {
+	  fram = &v4l_frames[fram_ix];
+	  fram->width=frmival.width;
+	  fram->height=frmival.height;
+	  fram->pixel_format = frmival.pixel_format;
+	  fram->numerator = frmival.discrete.numerator;
+	  fram->denominator = frmival.discrete.denominator;
+	  if (fram_ix < 1024)fram_ix++;
+	  //sprintf(buf, "%.3f s", (1.0 * f->numerator) / f->denominator);
 	  print_frmival(&frmival, "\t\t");
 	  frmival.index++;
 	}
