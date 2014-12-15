@@ -458,7 +458,7 @@ static void print_video_formats_ext(int fd, enum v4l2_buf_type type)
 	  fram->pixel_format = frmival.pixel_format;
 	  fram->numerator = frmival.discrete.numerator;
 	  fram->denominator = frmival.discrete.denominator;
-	  fram ->fps = (1.0 * fram->denominator) / fram->numerator);
+	  fram ->fps = (1.0 * fram->denominator) / fram->numerator;
 	  if (fram_ix < 1024)fram_ix++;
 	  //sprintf(buf, "%.3f s", (1.0 * f->numerator) / f->denominator);
 	  print_frmival(&frmival, "\t\t");
