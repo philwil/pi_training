@@ -423,6 +423,7 @@ typedef struct v4l_frames
 } v4l_frames_t;
 
 struct v4l_frames v4l_frames[1024];
+int fram_ix = 0;  
 
 static void print_video_formats_ext(int fd, enum v4l2_buf_type type)
 {
@@ -431,7 +432,7 @@ static void print_video_formats_ext(int fd, enum v4l2_buf_type type)
   struct v4l2_frmivalenum frmival;
   struct v4l_frames *fram;
 
-  int fram_ix = 0;  
+  fram_ix = 0;  
   fmt.index = 0;
   fmt.type = type;
   while (xioctl(fd, VIDIOC_ENUM_FMT, &fmt) >= 0) {
@@ -1363,7 +1364,7 @@ int main( int argc, char * argv[])
 	      dump_v4l2(fd, tab);
 	      printf("### v4l2 video formats ext [%s] ###\n",device);
 	      print_video_formats_ext(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE);
-
+	      printf("### fram iindex  [%d] ###\n",fram_idx);
 	      ok = 1;
 	      printf("### close device  [%s] ###\n",device);
 	      close(fd);
