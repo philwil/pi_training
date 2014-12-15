@@ -1,1 +1,2 @@
-gcc -std=c99 -o v4l2_driver v4l2_driver.c
+#gcc -std=c99 -o v4l2_driver v4l2_driver.c
+gcc  -o v4l2_driver v4l2_driver.c

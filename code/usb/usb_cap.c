@@ -941,6 +941,148 @@ int usb_ip_disable (struct usb_Ip *vd)
     return 0;
 }
 
+struct v4l2_queryctrl queryctrl;
+struct v4l2_querymenu querymenu;
+
+
+static void enumerate_menu(int fd)
+{
+
+  //static void enumerate_menu(void)
+  {
+        printf("  Menu items:\n");
+      
+	memset(&querymenu, 0, sizeof(querymenu));
+	querymenu.id = queryctrl.id;
+	
+	for (querymenu.index = queryctrl.minimum;
+	     querymenu.index <= queryctrl.maximum;
+	     querymenu.index++) {
+	  if (0 == ioctl(fd, VIDIOC_QUERYMENU, &querymenu)) {
+	      printf("  %s\n", querymenu.name);
+	  }
+	}
+    }
+
+}
+
+int list_usb_stuff(int fd)
+{
+  int rc = 0;    
+  
+  memset(&queryctrl, 0, sizeof(queryctrl));
+    
+    for (queryctrl.id = V4L2_CID_BASE;
+	 queryctrl.id < V4L2_CID_LASTP1;
+	 queryctrl.id++) {
+        if (0 == ioctl(fd, VIDIOC_QUERYCTRL, &queryctrl)) {
+	    if (queryctrl.flags & V4L2_CTRL_FLAG_DISABLED)
+	      continue;
+
+	    printf("Control %s\n", queryctrl.name);
+	    
+	    if (queryctrl.type == V4L2_CTRL_TYPE_MENU)
+	      enumerate_menu(fd);
+	} else {
+	  if (errno == EINVAL)
+	    continue;
+	  
+	  perror("VIDIOC_QUERYCTRL");
+	  //exit(EXIT_FAILURE);
+	  rc = -1;
+	  break;
+	}
+    }
+    if(rc == 0)
+      {
+	for (queryctrl.id = V4L2_CID_PRIVATE_BASE;;
+	     queryctrl.id++) {
+	  if (0 == ioctl(fd, VIDIOC_QUERYCTRL, &queryctrl)) {
+	    if (queryctrl.flags & V4L2_CTRL_FLAG_DISABLED)
+	      continue;
+	    
+	    printf("Control %s\n", queryctrl.name);
+	    
+	    if (queryctrl.type == V4L2_CTRL_TYPE_MENU)
+	      enumerate_menu(fd);
+	  } else {
+	    if (errno == EINVAL)
+	      break;
+	
+	    perror("VIDIOC_QUERYCTRL");
+	    rc = -1;
+            break;
+	    //exit(EXIT_FAILURE);
+	  }
+	}
+      }
+    return rc;
+}
+
+int list_usb_cap(int fd)
+{
+    int rc = 0;    
+    struct v4l2_capability cap;
+    memset(&cap, 0, sizeof(cap));
+    rc = xioctl(fd, VIDIOC_QUERYCAP, &cap);
+    printf("VIDEOC_QUERYCAP rc %d\n", rc);
+
+    if(rc == 0)
+      {
+	if (cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)
+	  {
+	    printf("fd %d is a video capture device\n", fd);
+	    
+	  }
+	if (cap.capabilities & V4L2_CAP_STREAMING)
+	  {
+	    printf("fd %d is a video streaming device\n", fd);
+	    
+	  }
+
+      }
+
+    struct v4l2_standard std;
+    struct v4l2_input input;
+    int index;
+    rc = ioctl(fd, VIDIOC_G_INPUT, &index);
+    if (rc == 0)
+      {
+	printf("VIDIOC_G_INPUT index %d\n", index);
+      }
+    
+    
+    for (index = 0; index < 32; index++)
+      {
+	memset(&input, 0, sizeof(input));
+	input.index = index;
+	rc =  ioctl(fd, VIDIOC_ENUMINPUT, &input);
+	if(rc==0)printf("ENUM index %d  rc %d\n", index, rc);
+	if (rc == 0)
+	  {
+	    printf("         input: %s\n",    input.name);
+	    printf("        status: %d\n",    input.status);
+	    printf("           std: %08x\n",  (unsigned int)input.std);
+	    printf("  capabilities: %08x\n",  input.capabilities);
+	    printf("\n");
+	  }
+      }
+    rc = 0;
+    for ( index = 0 ; (rc>= 0) && (index < 32); index++)
+      {
+	memset(&std, 0, sizeof(std));
+	std.index = index;
+	
+	rc =  ioctl(fd, VIDIOC_ENUMSTD, &std);
+	if (rc == 0)
+	  {
+	    printf("STD index %d  rc %d\n", index, rc);
+	    printf("         name: %s\n",    std.name);
+	  }
+      }
+    return rc;
+}
+
 int main (int argc, char ** argv)
 {
   int rc = 0;
@@ -951,6 +1093,12 @@ int main (int argc, char ** argv)
   int rc_int;
   int count = 128;
   int fd =  usb_open();
+  if(fd >0) 
+    {
+      list_usb_cap(fd);
+      //list_usb_stuff(fd);
+      //return 0;
+    }
   vd->num_buffs = 0;
   if(fd >0) 
     {
