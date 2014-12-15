@@ -1,2 +1,4 @@
 #gcc -std=c99 -o v4l2_driver v4l2_driver.c
 gcc  -o v4l2_driver v4l2_driver.c
+gcc -o v4l2 struct_dump.c v4l2_driver.c struct-v4l2.c
+#gcc -o v4l2 struct_dump.c v4l2_driver.c struct-v4l2.c

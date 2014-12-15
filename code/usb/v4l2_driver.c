@@ -27,6 +27,14 @@
 #include <stdlib.h>
 
 #include "v4l2_driver.h"
+#include <linux/videodev2.h>
+#include "struct_dump.h"
+#include "struct-v4l2.h"
+
+typedef struct flag_def {
+  int flag;
+  char *str;
+}flag_def;
 
 /****************************************************************************
 	Auxiliary routines
@@ -181,6 +189,267 @@ static void prt_buf_info(char *name,struct v4l2_buffer *p)
 		tc->userbits[2],
 		tc->userbits[3]);
 }
+
+static char *num2s(unsigned num);
+
+char *buftype2s(int type)
+{
+  static char s[128]; 
+  switch (type) {
+  case 0:
+    return "Invalid";
+  case V4L2_BUF_TYPE_VIDEO_CAPTURE:
+    return "Video Capture";
+  case V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE:
+    return "Video Capture Multiplanar";
+  case V4L2_BUF_TYPE_VIDEO_OUTPUT:
+    return "Video Output";
+  case V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE:
+    return "Video Output Multiplanar";
+  case V4L2_BUF_TYPE_VIDEO_OVERLAY:
+    return "Video Overlay";
+  case V4L2_BUF_TYPE_VBI_CAPTURE:
+    return "VBI Capture";
+  case V4L2_BUF_TYPE_VBI_OUTPUT:
+    return "VBI Output";
+  case V4L2_BUF_TYPE_SLICED_VBI_CAPTURE:
+    return "Sliced VBI Capture";
+  case V4L2_BUF_TYPE_SLICED_VBI_OUTPUT:
+    return "Sliced VBI Output";
+  case V4L2_BUF_TYPE_VIDEO_OUTPUT_OVERLAY:
+    return "Video Output Overlay";
+  case V4L2_BUF_TYPE_PRIVATE:
+    return "Private";
+  default:
+    snprintf(s, sizeof(s),"Unknown ( %s )", num2s(type)) ;  
+    return s;
+  }
+}
+
+static char *num2s(unsigned num)
+{
+static   char buf[10];
+
+  sprintf(buf, "%08x", num);
+  return buf;
+}
+
+
+static char * fcc2s(unsigned int val)
+{
+  static char s[128];
+  char * sp = &s[0];
+  s[0]=0;
+  *sp++ = val & 0xff;
+  *sp++ = (val >> 8) & 0xff;
+  *sp++ = (val >> 16) & 0xff;
+  *sp++ = (val >> 24) & 0xff;
+  return s;
+}
+
+//static 
+char *field2s(int val)
+{
+  static char s[128];
+  switch (val) {
+  case V4L2_FIELD_ANY:
+    return "Any";
+  case V4L2_FIELD_NONE:
+    return "None";
+  case V4L2_FIELD_TOP:
+    return "Top";
+  case V4L2_FIELD_BOTTOM:
+    return "Bottom";
+  case V4L2_FIELD_INTERLACED:
+    return "Interlaced";
+  case V4L2_FIELD_SEQ_TB:
+    return "Sequential Top-Bottom";
+  case V4L2_FIELD_SEQ_BT:
+    return "Sequential Bottom-Top";
+  case V4L2_FIELD_ALTERNATE:
+    return "Alternating";
+  case V4L2_FIELD_INTERLACED_TB:
+    return "Interlaced Top-Bottom";
+  case V4L2_FIELD_INTERLACED_BT:
+    return "Interlaced Bottom-Top";
+  default:
+    snprintf(s, sizeof(s),"Unknown ( %s )", num2s(val)) ;  
+    return s;
+  }
+}
+
+char * colorspace2s(int val)
+{
+  static char s[128];
+  switch (val) {
+  case V4L2_COLORSPACE_SMPTE170M:
+    return "Broadcast NTSC/PAL (SMPTE170M/ITU601)";
+  case V4L2_COLORSPACE_SMPTE240M:
+    return "1125-Line (US) HDTV (SMPTE240M)";
+  case V4L2_COLORSPACE_REC709:
+    return "HDTV and modern devices (ITU709)";
+  case V4L2_COLORSPACE_BT878:
+    return "Broken Bt878";
+  case V4L2_COLORSPACE_470_SYSTEM_M:
+    return "NTSC/M (ITU470/ITU601)";
+  case V4L2_COLORSPACE_470_SYSTEM_BG:
+    return "PAL/SECAM BG (ITU470/ITU601)";
+  case V4L2_COLORSPACE_JPEG:
+    return "JPEG (JFIF/ITU601)";
+  case V4L2_COLORSPACE_SRGB:
+    return "SRGB";
+  default:
+    snprintf(s, sizeof(s),"Unknown ( %s )", num2s(val)) ;  
+    return s;
+	     
+  }
+}
+
+char *flags2s(unsigned val, const flag_def *def)
+{
+  static char s[256];
+  s[0]=0;
+  char *sp = &s[0];
+  while (def->flag) {
+    if (val & def->flag) {
+      if (strlen(s)) 
+	strcat(s,", ");
+      strcat(s,def->str);
+      val &= ~def->flag;
+    }
+    def++;
+  }
+  if (val) {
+    if (strlen(s)) 
+      strcat(s,", ");
+    strcat(s,num2s(val));
+  }
+  return s;
+}
+
+
+static char *frmtype2s(unsigned type)
+{
+  static char *types[] = {
+    "Unknown",
+    "Discrete",
+    "Continuous",
+    "Stepwise"
+  };
+  
+  if (type > 3)
+    type = 0;
+  return types[type];
+}
+
+static char *fract2sec(const struct v4l2_fract * f)
+{
+  static char buf[100];
+  
+  sprintf(buf, "%.3f s", (1.0 * f->numerator) / f->denominator);
+  return buf;
+}
+
+static char *fract2fps(const struct v4l2_fract *f)
+{
+  static char buf[100];
+
+  sprintf(buf, "%.3f fps", (1.0 * f->denominator) / f->numerator);
+  return buf;
+}
+
+
+static void print_frmsize(const struct v4l2_frmsizeenum *frmsize, 
+			  const char *prefix)
+{
+  printf("%s\tSize: %s ", prefix, frmtype2s(frmsize->type));
+  if (frmsize->type == V4L2_FRMSIZE_TYPE_DISCRETE) {
+    printf("%dx%d", frmsize->discrete.width, frmsize->discrete.height);
+  } else if (frmsize->type == V4L2_FRMSIZE_TYPE_STEPWISE) {
+    printf("%dx%d - %dx%d with step %d/%d",
+	   frmsize->stepwise.min_width,
+	   frmsize->stepwise.min_height,
+	   frmsize->stepwise.max_width,
+	   frmsize->stepwise.max_height,
+	   frmsize->stepwise.step_width,
+	   frmsize->stepwise.step_height);
+  }
+  printf("\n");
+}
+
+static void print_frmival(const struct v4l2_frmivalenum *frmival, const char *prefix)
+{
+  printf("%s\tInterval: %s ", prefix, frmtype2s(frmival->type));
+  if (frmival->type == V4L2_FRMIVAL_TYPE_DISCRETE) {
+    printf("%s (%s)\n", fract2sec(&frmival->discrete),
+	   fract2fps(&frmival->discrete));
+  } else if (frmival->type == V4L2_FRMIVAL_TYPE_STEPWISE) {
+    printf("%s - %s with step %s\n",
+	   fract2sec(&frmival->stepwise.min),
+	   fract2sec(&frmival->stepwise.max),
+	   fract2sec(&frmival->stepwise.step));
+    printf("%s\t            : ", prefix);
+    printf("(%s - %s with step %s)\n",
+	   fract2fps(&frmival->stepwise.min),
+	   fract2fps(&frmival->stepwise.max),
+	   fract2fps(&frmival->stepwise.step));
+  }
+}
+
+static const flag_def fmtdesc_def[] = {
+  { V4L2_FMT_FLAG_COMPRESSED, "compressed" },
+  { V4L2_FMT_FLAG_EMULATED, "emulated" },
+  { 0, NULL }
+};
+
+char *fmtdesc2s(unsigned flags)
+{
+  return flags2s(flags, fmtdesc_def);
+}
+
+//types are:
+// V4L2_BUF_TYPE_VIDEO_CAPTURE   
+// V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE
+
+static void print_video_formats_ext(int fd, enum v4l2_buf_type type)
+{
+  struct v4l2_fmtdesc fmt;
+  struct v4l2_frmsizeenum frmsize;
+  struct v4l2_frmivalenum frmival;
+  
+  fmt.index = 0;
+  fmt.type = type;
+  while (xioctl(fd, VIDIOC_ENUM_FMT, &fmt) >= 0) {
+    printf("\tIndex       : %d\n", fmt.index);
+    printf("\tType        : %s\n", buftype2s(type));
+    printf("\tPixel Format: '%s'", fcc2s(fmt.pixelformat));
+    if (fmt.flags)
+      printf(" (%s)", fmtdesc2s(fmt.flags));
+    printf("\n");
+    printf("\tName        : %s\n", fmt.description);
+    frmsize.pixel_format = fmt.pixelformat;
+    frmsize.index = 0;
+    while (xioctl(fd, VIDIOC_ENUM_FRAMESIZES, &frmsize) >= 0) {
+      print_frmsize(&frmsize, "\t");
+      if (frmsize.type == V4L2_FRMSIZE_TYPE_DISCRETE) {
+	frmival.index = 0;
+	frmival.pixel_format = fmt.pixelformat;
+	frmival.width = frmsize.discrete.width;
+	frmival.height = frmsize.discrete.height;
+	while (xioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, &frmival) >= 0) {
+	  print_frmival(&frmival, "\t\t");
+	  frmival.index++;
+	}
+      }
+      frmsize.index++;
+    }
+    printf("\n");
+    fmt.index++;
+  }
+  return;
+
+}
+
 
 /****************************************************************************
 	Open V4L2 devices
@@ -886,6 +1155,159 @@ int v4l2_getset_freq (struct v4l2_driver *drv, enum v4l2_direction dir,
 	return 0;
 }
 
+
+static int dump_v4l2(int fd, int tab)
+{
+  struct v4l2_capability  capability;
+  struct v4l2_standard    standard;
+  struct v4l2_input       input;
+  struct v4l2_tuner       tuner;
+  struct v4l2_fmtdesc     fmtdesc;
+  struct v4l2_format      format;
+  struct v4l2_framebuffer fbuf;
+  struct v4l2_queryctrl   qctrl;
+  int i;
+  
+  printf("general info\n");
+  memset(&capability,0,sizeof(capability));
+  if (-1 == ioctl(fd,VIDIOC_QUERYCAP,&capability))
+    return -1;
+  printf("    VIDIOC_QUERYCAP\n");
+  print_struct(stdout,desc_v4l2_capability,&capability,"",tab);
+  printf("\n");
+  
+  printf("standards\n");
+  for (i = 0;; i++) {
+    memset(&standard,0,sizeof(standard));
+    standard.index = i;
+    if (-1 == ioctl(fd,VIDIOC_ENUMSTD,&standard))
+      break;
+    printf("    VIDIOC_ENUMSTD(%d)\n",i);
+    print_struct(stdout,desc_v4l2_standard,&standard,"",tab);
+  }
+  printf("\n");
+  
+  printf("inputs\n");
+  for (i = 0;; i++) {
+    memset(&input,0,sizeof(input));
+    input.index = i;
+    if (-1 == ioctl(fd,VIDIOC_ENUMINPUT,&input))
+      break;
+    printf("    VIDIOC_ENUMINPUT(%d)\n",i);
+    print_struct(stdout,desc_v4l2_input,&input,"",tab);
+  }
+  printf("\n");
+  
+  if (capability.capabilities & V4L2_CAP_TUNER) {
+    printf("tuners\n");
+    for (i = 0;; i++) {
+      memset(&tuner,0,sizeof(tuner));
+      tuner.index = i;
+      if (-1 == ioctl(fd,VIDIOC_G_TUNER,&tuner))
+	break;
+      printf("    VIDIOC_G_TUNER(%d)\n",i);
+      print_struct(stdout,desc_v4l2_tuner,&tuner,"",tab);
+    }
+    printf("\n");
+  }
+  
+  if (capability.capabilities & V4L2_CAP_VIDEO_CAPTURE) {
+    printf("video capture\n");
+    for (i = 0;; i++) {
+      memset(&fmtdesc,0,sizeof(fmtdesc));
+      fmtdesc.index = i;
+      fmtdesc.type  = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+      if (-1 == ioctl(fd,VIDIOC_ENUM_FMT,&fmtdesc))
+	break;
+      printf("    VIDIOC_ENUM_FMT(%d,VIDEO_CAPTURE)\n",i);
+      print_struct(stdout,desc_v4l2_fmtdesc,&fmtdesc,"",tab);
+    }
+    memset(&format,0,sizeof(format));
+    format.type  = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    if (-1 == ioctl(fd,VIDIOC_G_FMT,&format)) {
+      perror("VIDIOC_G_FMT(VIDEO_CAPTURE)");
+    } else {
+      printf("    VIDIOC_G_FMT(VIDEO_CAPTURE)\n");
+      print_struct(stdout,desc_v4l2_format,&format,"",tab);
+    }
+    printf("\n");
+  }
+  
+  if (capability.capabilities & V4L2_CAP_VIDEO_OVERLAY) {
+    printf("video overlay\n");
+    for (i = 0;; i++) {
+      memset(&fmtdesc,0,sizeof(fmtdesc));
+      fmtdesc.index = i;
+      fmtdesc.type  = V4L2_BUF_TYPE_VIDEO_OVERLAY;
+      if (-1 == ioctl(fd,VIDIOC_ENUM_FMT,&fmtdesc))
+	break;
+      printf("    VIDIOC_ENUM_FMT(%d,VIDEO_OVERLAY)\n",i);
+      print_struct(stdout,desc_v4l2_fmtdesc,&fmtdesc,"",tab);
+    }
+    memset(&format,0,sizeof(format));
+    format.type  = V4L2_BUF_TYPE_VIDEO_OVERLAY;
+    if (-1 == ioctl(fd,VIDIOC_G_FMT,&format)) {
+      perror("VIDIOC_G_FMT(VIDEO_OVERLAY)");
+    } else {
+      printf("    VIDIOC_G_FMT(VIDEO_OVERLAY)\n");
+      print_struct(stdout,desc_v4l2_format,&format,"",tab);
+    }
+    memset(&fbuf,0,sizeof(fbuf));
+    if (-1 == ioctl(fd,VIDIOC_G_FBUF,&fbuf)) {
+      perror("VIDIOC_G_FBUF");
+    } else {
+      printf("    VIDIOC_G_FBUF\n");
+      print_struct(stdout,desc_v4l2_framebuffer,&fbuf,"",tab);
+    }
+    printf("\n");
+  }
+  
+  if (capability.capabilities & V4L2_CAP_VBI_CAPTURE) {
+    printf("vbi capture\n");
+    for (i = 0;; i++) {
+      memset(&fmtdesc,0,sizeof(fmtdesc));
+      fmtdesc.index = i;
+      fmtdesc.type  = V4L2_BUF_TYPE_VBI_CAPTURE;
+      if (-1 == ioctl(fd,VIDIOC_ENUM_FMT,&fmtdesc))
+	break;
+      printf("    VIDIOC_ENUM_FMT(%d,VBI_CAPTURE)\n",i);
+      print_struct(stdout,desc_v4l2_fmtdesc,&fmtdesc,"",tab);
+    }
+    memset(&format,0,sizeof(format));
+    format.type  = V4L2_BUF_TYPE_VBI_CAPTURE;
+    if (-1 == ioctl(fd,VIDIOC_G_FMT,&format)) {
+      perror("VIDIOC_G_FMT(VBI_CAPTURE)");
+    } else {
+      printf("    VIDIOC_G_FMT(VBI_CAPTURE)\n");
+      print_struct(stdout,desc_v4l2_format,&format,"",tab);
+    }
+    printf("\n");
+  }
+  
+  printf("controls\n");
+  for (i = 0;; i++) {
+    memset(&qctrl,0,sizeof(qctrl));
+    qctrl.id = V4L2_CID_BASE+i;
+    if (-1 == ioctl(fd,VIDIOC_QUERYCTRL,&qctrl))
+      break;
+    if (qctrl.flags & V4L2_CTRL_FLAG_DISABLED)
+      continue;
+    printf("    VIDIOC_QUERYCTRL(BASE+%d)\n",i);
+    print_struct(stdout,desc_v4l2_queryctrl,&qctrl,"",tab);
+  }
+  for (i = 0;; i++) {
+    memset(&qctrl,0,sizeof(qctrl));
+    qctrl.id = V4L2_CID_PRIVATE_BASE+i;
+    if (-1 == ioctl(fd,VIDIOC_QUERYCTRL,&qctrl))
+      break;
+    if (qctrl.flags & V4L2_CTRL_FLAG_DISABLED)
+      continue;
+    printf("    VIDIOC_QUERYCTRL(PRIVATE_BASE+%d)\n",i);
+    print_struct(stdout,desc_v4l2_queryctrl,&qctrl,"",tab);
+  }
+  return 0;
+}
+ 
 int main( int argc, char * argv[])
 {
     struct v4l2_driver drv;
@@ -900,11 +1322,30 @@ int main( int argc, char * argv[])
     int num_buffers;
     int i;
     int bad;
+    int fd;
+    int ok;
+    int tab = 1;
+    char dummy[256];
 
 
     for (idx = 0 ; idx < 8; idx++)
       {
 	snprintf(device, sizeof(device), "/dev/video%d", idx);
+        fd = open(device, O_RDONLY);
+        if (fd >= 0)
+	  {
+	    if (-1 != ioctl(fd,VIDIOC_QUERYCAP,dummy)) {
+	      printf("### v4l2 device info [%s] ###\n",device);
+	      dump_v4l2(fd, tab);
+	      printf("### v4l2 video formats ext [%s] ###\n",device);
+	      print_video_formats_ext(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE);
+
+	      ok = 1;
+	      printf("### close device  [%s] ###\n",device);
+	      close(fd);
+	    }
+	  }
+	continue;
 
 	rc = v4l2_open(device, debug, &drv);
 	if(rc == 0)

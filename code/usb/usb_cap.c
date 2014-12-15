@@ -1113,6 +1113,7 @@ int main (int argc, char ** argv)
 
       printf(" After open rc = %d\n", rc);
       usb_ip_enable(vd);
+      rc_int = -1;
       if(rc >= 0)
       {
           while(count > 0)
@@ -1123,7 +1124,9 @@ int main (int argc, char ** argv)
               small_pause(1000000/30);
           }
       }
-      usb_ip_disable(vd);
+      printf(" running disable\n");
+      if(rc_int == 0)usb_ip_disable(vd);
+      printf(" running close \n");
 
       close(fd);
     }
