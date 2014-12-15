@@ -80,6 +80,42 @@ int run_cmd4(void *data, void *cdata, int cargc, char **cargv)
   return 0;
 }
 
+// take the new, add it to tmp, if it contains a terminator then 
+// copy it (including the terminator) into buff 
+// leave what's left in tmp
+int grab_string(char *new, char *buff, int blen, char *tmp, int tlen, char *term)
+{
+    int tl = strlen(tmp);
+    int nl = strlen(new);
+    char *sp;
+    buff[0]=0;
+    if (nl + (tl + 1) > tlen) return -1;
+
+    // copy new on to tmp
+    memcpy(&tmp[tl], new, nl+1);
+    sp = strstr(tmp, term);
+    if(sp)
+    {
+	// found a term
+	nl = (sp-tmp) + strlen(term);
+	if(nl > blen-1) return -1;
+	// copy up to the term into buff
+	memcpy(buff, tmp, nl);
+	// terminate it
+	buff[nl] = 0;
+	// remove buff from tmp
+	memcpy(tmp, &tmp[nl], tl - nl);
+	// termonate
+	tmp[tl - nl]= 0;
+	nl=strlen(buff);
+    }
+    else
+    {
+        nl = 0;
+    }
+    return nl;
+}
+
 int decode_fixed_cmds(char *cmd_cpy, void *data)
 {
   int rc = 0;

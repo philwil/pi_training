@@ -1364,7 +1364,7 @@ int main( int argc, char * argv[])
 	      dump_v4l2(fd, tab);
 	      printf("### v4l2 video formats ext [%s] ###\n",device);
 	      print_video_formats_ext(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE);
-	      printf("### fram iindex  [%d] ###\n",fram_idx);
+	      printf("### fram index  [%d] ###\n",fram_ix);
 	      ok = 1;
 	      printf("### close device  [%s] ###\n",device);
 	      close(fd);
