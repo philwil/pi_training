@@ -32,8 +32,8 @@
 #include "struct-v4l2.h"
 
 typedef struct flag_def {
-  int flag;
-  char *str;
+    int flag;
+    char *str;
 }flag_def;
 
 /****************************************************************************
@@ -41,64 +41,65 @@ typedef struct flag_def {
  ****************************************************************************/
 static int xioctl (int fd, unsigned long int request, void *arg)
 {
-	int r;
-
-	do r = ioctl (fd, request, arg);
-	while (-1 == r && EINTR == errno);
-
-	return r;
+    int r;
+  
+    do r = ioctl (fd, request, arg);
+    while (-1 == r && EINTR == errno);
+    
+    return r;
 }
 
 static void free_list(struct drv_list **list_ptr)
 {
-	struct drv_list *prev,*cur;
+    struct drv_list *prev,*cur;
+  
+    if (list_ptr==NULL)
+        return;
+    
+    prev=*list_ptr;
+    if (prev==NULL)
+        return;
 
-	if (list_ptr==NULL)
-		return;
-
-	prev=*list_ptr;
-	if (prev==NULL)
-		return;
-
-	do {
-		cur=prev->next;
-		if (prev->curr)
-			free (prev->curr);	// Free data
-		free (prev);			// Free list
-		prev=cur;
-	} while (prev);
-
-	*list_ptr=NULL;
+    do 
+      {
+        cur=prev->next;
+	if (prev->curr)
+	  free (prev->curr);	// Free data
+	free (prev);			// Free list
+	prev=cur;
+      } while (prev);
+    
+    *list_ptr=NULL;
 }
 
 /****************************************************************************
 	Auxiliary Arrays to aid debug messages
  ****************************************************************************/
 char *v4l2_field_names[] = {
-	[V4L2_FIELD_ANY]        = "any",
-	[V4L2_FIELD_NONE]       = "none",
-	[V4L2_FIELD_TOP]        = "top",
-	[V4L2_FIELD_BOTTOM]     = "bottom",
-	[V4L2_FIELD_INTERLACED] = "interlaced",
-	[V4L2_FIELD_SEQ_TB]     = "seq-tb",
-	[V4L2_FIELD_SEQ_BT]     = "seq-bt",
-	[V4L2_FIELD_ALTERNATE]  = "alternate",
+  [V4L2_FIELD_ANY]        = "any",
+  [V4L2_FIELD_NONE]       = "none",
+  [V4L2_FIELD_TOP]        = "top",
+  [V4L2_FIELD_BOTTOM]     = "bottom",
+  [V4L2_FIELD_INTERLACED] = "interlaced",
+  [V4L2_FIELD_SEQ_TB]     = "seq-tb",
+  [V4L2_FIELD_SEQ_BT]     = "seq-bt",
+  [V4L2_FIELD_ALTERNATE]  = "alternate",
 };
 
 char *v4l2_type_names[] = {
-	[V4L2_BUF_TYPE_VIDEO_CAPTURE]      = "video-cap",
-	[V4L2_BUF_TYPE_VIDEO_OVERLAY]      = "video-over",
-	[V4L2_BUF_TYPE_VIDEO_OUTPUT]       = "video-out",
-	[V4L2_BUF_TYPE_VBI_CAPTURE]        = "vbi-cap",
-	[V4L2_BUF_TYPE_VBI_OUTPUT]         = "vbi-out",
-	[V4L2_BUF_TYPE_SLICED_VBI_CAPTURE] = "sliced-vbi-cap",
-	[V4L2_BUF_TYPE_SLICED_VBI_OUTPUT]  = "slicec-vbi-out",
+  [V4L2_BUF_TYPE_VIDEO_CAPTURE]      = "video-cap",
+  [V4L2_BUF_TYPE_VIDEO_OVERLAY]      = "video-over",
+  [V4L2_BUF_TYPE_VIDEO_OUTPUT]       = "video-out",
+  [V4L2_BUF_TYPE_VBI_CAPTURE]        = "vbi-cap",
+  [V4L2_BUF_TYPE_VBI_OUTPUT]         = "vbi-out",
+  [V4L2_BUF_TYPE_SLICED_VBI_CAPTURE] = "sliced-vbi-cap",
+  [V4L2_BUF_TYPE_SLICED_VBI_OUTPUT]  = "slicec-vbi-out",
 };
 
 static char *v4l2_memory_names[] = {
-	[V4L2_MEMORY_MMAP]    = "mmap",
-	[V4L2_MEMORY_USERPTR] = "userptr",
-	[V4L2_MEMORY_OVERLAY] = "overlay",
+  [V4L2_MEMORY_MMAP]    = "mmap",
+  [V4L2_MEMORY_USERPTR] = "userptr",
+  [V4L2_MEMORY_OVERLAY] = "overlay",
 };
 
 #define ARRAY_SIZE(arr) (sizeof(arr)/sizeof(*arr))
@@ -106,176 +107,176 @@ static char *v4l2_memory_names[] = {
 
 static char *prt_caps(uint32_t caps)
 {
-	static char s[4096]="";
-
-	if (V4L2_CAP_VIDEO_CAPTURE & caps)
-		strcat (s,"CAPTURE ");
-	if (V4L2_CAP_VIDEO_CAPTURE_MPLANE & caps)
-		strcat (s,"CAPTURE_MPLANE ");
-	if (V4L2_CAP_VIDEO_OUTPUT & caps)
-		strcat (s,"OUTPUT ");
-	if (V4L2_CAP_VIDEO_OUTPUT_MPLANE & caps)
-		strcat (s,"OUTPUT_MPLANE ");
-	if (V4L2_CAP_VIDEO_M2M & caps)
-		strcat (s,"M2M ");
-	if (V4L2_CAP_VIDEO_M2M_MPLANE & caps)
-		strcat (s,"M2M_MPLANE ");
-	if (V4L2_CAP_VIDEO_OVERLAY & caps)
-		strcat (s,"OVERLAY ");
-	if (V4L2_CAP_VBI_CAPTURE & caps)
-		strcat (s,"VBI_CAPTURE ");
-	if (V4L2_CAP_VBI_OUTPUT & caps)
-		strcat (s,"VBI_OUTPUT ");
-	if (V4L2_CAP_SLICED_VBI_CAPTURE & caps)
-		strcat (s,"SLICED_VBI_CAPTURE ");
-	if (V4L2_CAP_SLICED_VBI_OUTPUT & caps)
-		strcat (s,"SLICED_VBI_OUTPUT ");
-	if (V4L2_CAP_RDS_CAPTURE & caps)
-		strcat (s,"RDS_CAPTURE ");
-	if (V4L2_CAP_RDS_OUTPUT & caps)
-		strcat (s,"RDS_OUTPUT ");
-	//if (V4L2_CAP_SDR_CAPTURE & caps)
-	//	strcat (s,"SDR_CAPTURE ");
-	if (V4L2_CAP_TUNER & caps)
-		strcat (s,"TUNER ");
-	if (V4L2_CAP_HW_FREQ_SEEK & caps)
-		strcat (s,"HW_FREQ_SEEK ");
-	if (V4L2_CAP_MODULATOR & caps)
-		strcat (s,"MODULATOR ");
-	if (V4L2_CAP_AUDIO & caps)
-		strcat (s,"AUDIO ");
-	if (V4L2_CAP_RADIO & caps)
-		strcat (s,"RADIO ");
-	if (V4L2_CAP_READWRITE & caps)
-		strcat (s,"READWRITE ");
-	if (V4L2_CAP_ASYNCIO & caps)
-		strcat (s,"ASYNCIO ");
-	if (V4L2_CAP_STREAMING & caps)
-		strcat (s,"STREAMING ");
-	//	if (V4L2_CAP_EXT_PIX_FORMAT & caps)
+    static char s[4096]="";
+  
+    if (V4L2_CAP_VIDEO_CAPTURE & caps)
+      strcat (s,"CAPTURE ");
+    if (V4L2_CAP_VIDEO_CAPTURE_MPLANE & caps)
+      strcat (s,"CAPTURE_MPLANE ");
+    if (V4L2_CAP_VIDEO_OUTPUT & caps)
+      strcat (s,"OUTPUT ");
+    if (V4L2_CAP_VIDEO_OUTPUT_MPLANE & caps)
+      strcat (s,"OUTPUT_MPLANE ");
+    if (V4L2_CAP_VIDEO_M2M & caps)
+      strcat (s,"M2M ");
+    if (V4L2_CAP_VIDEO_M2M_MPLANE & caps)
+      strcat (s,"M2M_MPLANE ");
+    if (V4L2_CAP_VIDEO_OVERLAY & caps)
+      strcat (s,"OVERLAY ");
+    if (V4L2_CAP_VBI_CAPTURE & caps)
+      strcat (s,"VBI_CAPTURE ");
+    if (V4L2_CAP_VBI_OUTPUT & caps)
+      strcat (s,"VBI_OUTPUT ");
+    if (V4L2_CAP_SLICED_VBI_CAPTURE & caps)
+      strcat (s,"SLICED_VBI_CAPTURE ");
+    if (V4L2_CAP_SLICED_VBI_OUTPUT & caps)
+      strcat (s,"SLICED_VBI_OUTPUT ");
+    if (V4L2_CAP_RDS_CAPTURE & caps)
+      strcat (s,"RDS_CAPTURE ");
+    if (V4L2_CAP_RDS_OUTPUT & caps)
+      strcat (s,"RDS_OUTPUT ");
+    //if (V4L2_CAP_SDR_CAPTURE & caps)
+    //	strcat (s,"SDR_CAPTURE ");
+    if (V4L2_CAP_TUNER & caps)
+      strcat (s,"TUNER ");
+    if (V4L2_CAP_HW_FREQ_SEEK & caps)
+      strcat (s,"HW_FREQ_SEEK ");
+    if (V4L2_CAP_MODULATOR & caps)
+      strcat (s,"MODULATOR ");
+    if (V4L2_CAP_AUDIO & caps)
+      strcat (s,"AUDIO ");
+    if (V4L2_CAP_RADIO & caps)
+      strcat (s,"RADIO ");
+    if (V4L2_CAP_READWRITE & caps)
+      strcat (s,"READWRITE ");
+    if (V4L2_CAP_ASYNCIO & caps)
+      strcat (s,"ASYNCIO ");
+    if (V4L2_CAP_STREAMING & caps)
+      strcat (s,"STREAMING ");
+    //	if (V4L2_CAP_EXT_PIX_FORMAT & caps)
 	//	strcat (s,"EXT_PIX_FORMAT ");
-	if (V4L2_CAP_DEVICE_CAPS & caps)
-		strcat (s,"DEVICE_CAPS ");
-
-	return s;
+    if (V4L2_CAP_DEVICE_CAPS & caps)
+      strcat (s,"DEVICE_CAPS ");
+    
+    return s;
 }
 
 static void prt_buf_info(char *name,struct v4l2_buffer *p)
 {
-	struct v4l2_timecode *tc=&p->timecode;
-
-	printf ("%s: %02ld:%02d:%02d.%08ld index=%d, type=%s, "
-		"bytesused=%d, flags=0x%08x, "
-		"field=%s, sequence=%d, memory=%s, offset=0x%08x, length=%d\n",
-		name, (p->timestamp.tv_sec/3600),
-		(int)(p->timestamp.tv_sec/60)%60,
-		(int)(p->timestamp.tv_sec%60),
-		p->timestamp.tv_usec,
-		p->index,
-		prt_names(p->type,v4l2_type_names),
-		p->bytesused,p->flags,
-		prt_names(p->field,v4l2_field_names),
-		p->sequence,
-		prt_names(p->memory,v4l2_memory_names),
-		p->m.offset,
-		p->length);
-	tc=&p->timecode;
-	printf ("\tTIMECODE: %02d:%02d:%02d type=%d, "
-		"flags=0x%08x, frames=%d, userbits=0x%02x%02x%02x%02x\n",
-		tc->hours,tc->minutes,tc->seconds,
-		tc->type, tc->flags, tc->frames,
-		tc->userbits[0],
-		tc->userbits[1],
-		tc->userbits[2],
-		tc->userbits[3]);
+    struct v4l2_timecode *tc=&p->timecode;
+    
+    printf ("%s: %02ld:%02d:%02d.%08ld index=%d, type=%s, "
+	    "bytesused=%d, flags=0x%08x, "
+	    "field=%s, sequence=%d, memory=%s, offset=0x%08x, length=%d\n",
+	    name, (p->timestamp.tv_sec/3600),
+	    (int)(p->timestamp.tv_sec/60)%60,
+	    (int)(p->timestamp.tv_sec%60),
+	    p->timestamp.tv_usec,
+	    p->index,
+	    prt_names(p->type,v4l2_type_names),
+	    p->bytesused,p->flags,
+	    prt_names(p->field,v4l2_field_names),
+	    p->sequence,
+	    prt_names(p->memory,v4l2_memory_names),
+	    p->m.offset,
+	    p->length);
+    tc=&p->timecode;
+    printf ("\tTIMECODE: %02d:%02d:%02d type=%d, "
+	    "flags=0x%08x, frames=%d, userbits=0x%02x%02x%02x%02x\n",
+	    tc->hours,tc->minutes,tc->seconds,
+	    tc->type, tc->flags, tc->frames,
+	    tc->userbits[0],
+	    tc->userbits[1],
+	    tc->userbits[2],
+	    tc->userbits[3]);
 }
 
 static char *num2s(unsigned num);
 
 char *buftype2s(int type)
 {
-  static char s[128]; 
-  switch (type) {
-  case 0:
-    return "Invalid";
-  case V4L2_BUF_TYPE_VIDEO_CAPTURE:
-    return "Video Capture";
-  case V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE:
-    return "Video Capture Multiplanar";
-  case V4L2_BUF_TYPE_VIDEO_OUTPUT:
-    return "Video Output";
-  case V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE:
-    return "Video Output Multiplanar";
-  case V4L2_BUF_TYPE_VIDEO_OVERLAY:
-    return "Video Overlay";
-  case V4L2_BUF_TYPE_VBI_CAPTURE:
-    return "VBI Capture";
-  case V4L2_BUF_TYPE_VBI_OUTPUT:
-    return "VBI Output";
-  case V4L2_BUF_TYPE_SLICED_VBI_CAPTURE:
-    return "Sliced VBI Capture";
-  case V4L2_BUF_TYPE_SLICED_VBI_OUTPUT:
-    return "Sliced VBI Output";
-  case V4L2_BUF_TYPE_VIDEO_OUTPUT_OVERLAY:
-    return "Video Output Overlay";
-  case V4L2_BUF_TYPE_PRIVATE:
+    static char s[128]; 
+    switch (type) {
+    case 0:
+      return "Invalid";
+    case V4L2_BUF_TYPE_VIDEO_CAPTURE:
+      return "Video Capture";
+    case V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE:
+      return "Video Capture Multiplanar";
+    case V4L2_BUF_TYPE_VIDEO_OUTPUT:
+      return "Video Output";
+    case V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE:
+      return "Video Output Multiplanar";
+    case V4L2_BUF_TYPE_VIDEO_OVERLAY:
+      return "Video Overlay";
+    case V4L2_BUF_TYPE_VBI_CAPTURE:
+      return "VBI Capture";
+    case V4L2_BUF_TYPE_VBI_OUTPUT:
+      return "VBI Output";
+    case V4L2_BUF_TYPE_SLICED_VBI_CAPTURE:
+      return "Sliced VBI Capture";
+    case V4L2_BUF_TYPE_SLICED_VBI_OUTPUT:
+      return "Sliced VBI Output";
+    case V4L2_BUF_TYPE_VIDEO_OUTPUT_OVERLAY:
+      return "Video Output Overlay";
+    case V4L2_BUF_TYPE_PRIVATE:
     return "Private";
-  default:
-    snprintf(s, sizeof(s),"Unknown ( %s )", num2s(type)) ;  
-    return s;
-  }
+    default:
+      snprintf(s, sizeof(s),"Unknown ( %s )", num2s(type)) ;  
+      return s;
+    }
 }
 
 static char *num2s(unsigned num)
 {
-static   char buf[10];
+    static   char buf[10];
 
-  sprintf(buf, "%08x", num);
-  return buf;
+    sprintf(buf, "%08x", num);
+    return buf;
 }
 
 
 static char * fcc2s(unsigned int val)
 {
-  static char s[128];
-  char * sp = &s[0];
-  s[0]=0;
-  *sp++ = val & 0xff;
-  *sp++ = (val >> 8) & 0xff;
-  *sp++ = (val >> 16) & 0xff;
-  *sp++ = (val >> 24) & 0xff;
-  return s;
+    static char s[128];
+    char * sp = &s[0];
+    s[0]=0;
+    *sp++ = val & 0xff;
+    *sp++ = (val >> 8) & 0xff;
+    *sp++ = (val >> 16) & 0xff;
+    *sp++ = (val >> 24) & 0xff;
+    return s;
 }
 
 //static 
 char *field2s(int val)
 {
-  static char s[128];
-  switch (val) {
-  case V4L2_FIELD_ANY:
-    return "Any";
-  case V4L2_FIELD_NONE:
-    return "None";
-  case V4L2_FIELD_TOP:
-    return "Top";
-  case V4L2_FIELD_BOTTOM:
-    return "Bottom";
-  case V4L2_FIELD_INTERLACED:
-    return "Interlaced";
-  case V4L2_FIELD_SEQ_TB:
-    return "Sequential Top-Bottom";
-  case V4L2_FIELD_SEQ_BT:
-    return "Sequential Bottom-Top";
-  case V4L2_FIELD_ALTERNATE:
-    return "Alternating";
-  case V4L2_FIELD_INTERLACED_TB:
-    return "Interlaced Top-Bottom";
-  case V4L2_FIELD_INTERLACED_BT:
-    return "Interlaced Bottom-Top";
-  default:
-    snprintf(s, sizeof(s),"Unknown ( %s )", num2s(val)) ;  
-    return s;
-  }
+    static char s[128];
+    switch (val) {
+    case V4L2_FIELD_ANY:
+      return "Any";
+    case V4L2_FIELD_NONE:
+      return "None";
+    case V4L2_FIELD_TOP:
+      return "Top";
+    case V4L2_FIELD_BOTTOM:
+      return "Bottom";
+    case V4L2_FIELD_INTERLACED:
+      return "Interlaced";
+    case V4L2_FIELD_SEQ_TB:
+      return "Sequential Top-Bottom";
+    case V4L2_FIELD_SEQ_BT:
+      return "Sequential Bottom-Top";
+    case V4L2_FIELD_ALTERNATE:
+      return "Alternating";
+    case V4L2_FIELD_INTERLACED_TB:
+      return "Interlaced Top-Bottom";
+    case V4L2_FIELD_INTERLACED_BT:
+      return "Interlaced Bottom-Top";
+    default:
+      snprintf(s, sizeof(s),"Unknown ( %s )", num2s(val)) ;  
+      return s;
+    }
 }
 
 char * colorspace2s(int val)
@@ -307,18 +308,18 @@ char * colorspace2s(int val)
 
 char *flags2s(unsigned val, const flag_def *def)
 {
-  static char s[256];
-  s[0]=0;
-  char *sp = &s[0];
-  while (def->flag) {
-    if (val & def->flag) {
-      if (strlen(s)) 
-	strcat(s,", ");
-      strcat(s,def->str);
-      val &= ~def->flag;
+    static char s[256];
+    s[0]=0;
+    char *sp = &s[0];
+    while (def->flag) {
+      if (val & def->flag) {
+	if (strlen(s)) 
+	  strcat(s,", ");
+	strcat(s,def->str);
+	val &= ~def->flag;
+      }
+      def++;
     }
-    def++;
-  }
   if (val) {
     if (strlen(s)) 
       strcat(s,", ");
@@ -379,100 +380,127 @@ static void print_frmsize(const struct v4l2_frmsizeenum *frmsize,
 
 static void print_frmival(const struct v4l2_frmivalenum *frmival, const char *prefix)
 {
-  printf("%s\tInterval: %s ", prefix, frmtype2s(frmival->type));
-  if (frmival->type == V4L2_FRMIVAL_TYPE_DISCRETE) {
-    printf("%s (%s)\n", fract2sec(&frmival->discrete),
-	   fract2fps(&frmival->discrete));
-  } else if (frmival->type == V4L2_FRMIVAL_TYPE_STEPWISE) {
-    printf("%s - %s with step %s\n",
-	   fract2sec(&frmival->stepwise.min),
-	   fract2sec(&frmival->stepwise.max),
-	   fract2sec(&frmival->stepwise.step));
-    printf("%s\t            : ", prefix);
-    printf("(%s - %s with step %s)\n",
-	   fract2fps(&frmival->stepwise.min),
-	   fract2fps(&frmival->stepwise.max),
-	   fract2fps(&frmival->stepwise.step));
-  }
+    printf("%s\tInterval: %s ", prefix, frmtype2s(frmival->type));
+    if (frmival->type == V4L2_FRMIVAL_TYPE_DISCRETE) {
+        printf("%s (%s)\n", fract2sec(&frmival->discrete),
+	       fract2fps(&frmival->discrete));
+    } else if (frmival->type == V4L2_FRMIVAL_TYPE_STEPWISE) {
+        printf("%s - %s with step %s\n",
+	       fract2sec(&frmival->stepwise.min),
+	       fract2sec(&frmival->stepwise.max),
+	       fract2sec(&frmival->stepwise.step));
+	printf("%s\t            : ", prefix);
+	printf("(%s - %s with step %s)\n",
+	       fract2fps(&frmival->stepwise.min),
+	       fract2fps(&frmival->stepwise.max),
+	       fract2fps(&frmival->stepwise.step));
+    }
 }
 
 static const flag_def fmtdesc_def[] = {
-  { V4L2_FMT_FLAG_COMPRESSED, "compressed" },
-  { V4L2_FMT_FLAG_EMULATED, "emulated" },
-  { 0, NULL }
+    { V4L2_FMT_FLAG_COMPRESSED, "compressed" },
+    { V4L2_FMT_FLAG_EMULATED, "emulated" },
+    { 0, NULL }
 };
 
 char *fmtdesc2s(unsigned flags)
 {
-  return flags2s(flags, fmtdesc_def);
+    return flags2s(flags, fmtdesc_def);
 }
 
 //types are:
 // V4L2_BUF_TYPE_VIDEO_CAPTURE   
 // V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE
 
-typedef struct v4l_frames
+typedef struct v4l2_fram
 {
-  int width;
-  int height;
-  unsigned int pixel_format;
-  float numerator;
-  float denominator;
-  float fps;
+    int width;
+    int height;
+    unsigned int pixel_format;
+    unsigned int field;
+    float nom;
 
-} v4l_frames_t;
+    float den;
+    float fps;
 
-struct v4l_frames v4l_frames[1024];
+} v4l2_fram_t;
+
+v4l2_fram_t v4l2_fram[1024];
+
 int fram_ix = 0;  
+
+static void print_fram(void)
+{
+
+    int ix = 0;
+    printf(" Fram options available .. pick one fram_ix %d\n", fram_ix);
+    v4l2_fram_t *fram;
+    while (ix < fram_ix)
+    {
+	fram = &v4l2_fram[ix];
+	if(ix <400)printf("ix [%2d] %4d X %4d %f %f %f %04x\n"
+	       , ix
+	       , fram->width
+	       , fram->height
+	       , fram->nom
+	       , fram->den
+	       , fram->fps
+	       , fram->pixel_format
+	       );
+	
+	ix++;
+    }
+}
 
 static void print_video_formats_ext(int fd, enum v4l2_buf_type type)
 {
-  struct v4l2_fmtdesc fmt;
-  struct v4l2_frmsizeenum frmsize;
-  struct v4l2_frmivalenum frmival;
-  struct v4l_frames *fram;
-
-  fram_ix = 0;  
-  fmt.index = 0;
-  fmt.type = type;
-  while (xioctl(fd, VIDIOC_ENUM_FMT, &fmt) >= 0) {
-    printf("\tIndex       : %d\n", fmt.index);
-    printf("\tType        : %s\n", buftype2s(type));
-    printf("\tPixel Format: '%s'", fcc2s(fmt.pixelformat));
-    if (fmt.flags)
-      printf(" (%s)", fmtdesc2s(fmt.flags));
-    printf("\n");
-    printf("\tName        : %s\n", fmt.description);
-    frmsize.pixel_format = fmt.pixelformat;
-    frmsize.index = 0;
-    while (xioctl(fd, VIDIOC_ENUM_FRAMESIZES, &frmsize) >= 0) {
-      print_frmsize(&frmsize, "\t");
-      if (frmsize.type == V4L2_FRMSIZE_TYPE_DISCRETE) {
-	frmival.index = 0;
-	frmival.pixel_format = fmt.pixelformat;
-	frmival.width = frmsize.discrete.width;
-	frmival.height = frmsize.discrete.height;
-	while (xioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, &frmival) >= 0) {
-	  fram = &v4l_frames[fram_ix];
-	  fram->width=frmival.width;
-	  fram->height=frmival.height;
-	  fram->pixel_format = frmival.pixel_format;
-	  fram->numerator = frmival.discrete.numerator;
-	  fram->denominator = frmival.discrete.denominator;
-	  fram ->fps = (1.0 * fram->denominator) / fram->numerator;
-	  if (fram_ix < 1024)fram_ix++;
-	  //sprintf(buf, "%.3f s", (1.0 * f->numerator) / f->denominator);
-	  print_frmival(&frmival, "\t\t");
-	  frmival.index++;
+    struct v4l2_fmtdesc fmt;
+    struct v4l2_frmsizeenum frmsize;
+    struct v4l2_frmivalenum frmival;
+    struct v4l2_fram *fram;
+    
+    fram_ix = 0;  
+    fmt.index = 0;
+    fmt.type = type;
+    while (xioctl(fd, VIDIOC_ENUM_FMT, &fmt) >= 0) {
+        printf("\tIndex       : %d\n", fmt.index);
+	printf("\tType        : %s\n", buftype2s(type));
+	printf("\tPixel Format: '%s'", fcc2s(fmt.pixelformat));
+	if (fmt.flags)
+	  printf(" (%s)", fmtdesc2s(fmt.flags));
+	printf("\n");
+	printf("\tName        : %s\n", fmt.description);
+	frmsize.pixel_format = fmt.pixelformat;
+	frmsize.index = 0;
+	while (xioctl(fd, VIDIOC_ENUM_FRAMESIZES, &frmsize) >= 0) {
+	  print_frmsize(&frmsize, "\t");
+	  if (frmsize.type == V4L2_FRMSIZE_TYPE_DISCRETE) {
+	    frmival.index = 0;
+	    frmival.pixel_format = fmt.pixelformat;
+	    frmival.width = frmsize.discrete.width;
+	    frmival.height = frmsize.discrete.height;
+	    
+	    while (xioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, &frmival) >= 0) {
+	      fram = &v4l2_fram[fram_ix];
+	      fram->width=frmival.width;
+	      fram->height=frmival.height;
+	      fram->pixel_format = frmival.pixel_format;
+	      fram->nom = frmival.discrete.numerator;
+	      fram->den = frmival.discrete.denominator;
+	      fram->fps = (1.0 * fram->den) / fram->nom;
+	      //fram->field = frmival.field;
+	      if (fram_ix < 1024)fram_ix++;
+	      //sprintf(buf, "%.3f s", (1.0 * f->numerator) / f->denominator);
+	      print_frmival(&frmival, "\t\t");
+	      frmival.index++;
+	    }
+	  }
+	  frmsize.index++;
 	}
-      }
-      frmsize.index++;
+	printf("\n");
+	fmt.index++;
     }
-    printf("\n");
-    fmt.index++;
-  }
-  return;
-
+    return;
 }
 
 
@@ -481,31 +509,31 @@ static void print_video_formats_ext(int fd, enum v4l2_buf_type type)
  ****************************************************************************/
 int v4l2_open (char *device, int debug, struct v4l2_driver *drv)
 {
-	int ret;
-
-	memset(drv,0,sizeof(*drv));
-
-	drv->debug=debug;
-
-	if ((drv->fd = open(device, O_RDWR/* | O_NONBLOCK */)) < 0) {
-		return(-errno);
-	}
-
-	ret=xioctl(drv->fd,VIDIOC_QUERYCAP,(void *) &drv->cap);
-	if (!ret && drv->debug) {
-		printf ("driver=%s, card=%s, bus=%s, version=%d.%d.%d, "
-			"capabilities=%s, device_caps=%s\n",
-			drv->cap.driver,drv->cap.card,drv->cap.bus_info,
-			(drv->cap.version >> 16) & 0xff,
-			(drv->cap.version >>  8) & 0xff,
-			drv->cap.version         & 0xff,
-			prt_caps(drv->cap.capabilities),
-			(drv->cap.capabilities & V4L2_CAP_DEVICE_CAPS) ?
-			prt_caps(drv->cap.device_caps) : "N/A");
-
-
-	}
-	return ret;
+  int ret;
+  
+  memset(drv,0,sizeof(*drv));
+  
+  drv->debug=debug;
+  
+  if ((drv->fd = open(device, O_RDWR/* | O_NONBLOCK */)) < 0) {
+    return(-errno);
+  }
+  
+  ret=xioctl(drv->fd,VIDIOC_QUERYCAP,(void *) &drv->cap);
+  if (!ret && drv->debug) {
+    printf ("driver=%s, card=%s, bus=%s, version=%d.%d.%d, "
+	    "capabilities=%s, device_caps=%s\n",
+	    drv->cap.driver,drv->cap.card,drv->cap.bus_info,
+	    (drv->cap.version >> 16) & 0xff,
+	    (drv->cap.version >>  8) & 0xff,
+	    drv->cap.version         & 0xff,
+	    prt_caps(drv->cap.capabilities),
+	    (drv->cap.capabilities & V4L2_CAP_DEVICE_CAPS) ?
+	    prt_caps(drv->cap.device_caps) : "N/A");
+    
+    
+  }
+  return ret;
 }
 
 
@@ -715,6 +743,49 @@ int v4l2_setget_input (struct v4l2_driver *drv, enum v4l2_direction dir, struct 
 	return ok;
 }
 
+/*
+Setting frame rates
+
+use the VIDIOC_G_PARM ioctl and check the 
+v4l2_streamparm.parm.capture.capability member to find out whether the 
+driver allows V4L2_CAP_TIMEPERFRAME.
+if so, use the VIDIOC_ENUM_FRAMEINTERVALS ioctl to get the list of 
+possible frame intervals (inverse of framerates), 
+in the form of v4l2_fract structures
+use these values with the VIDIOC_S_PARM ioctl 
+and fill in the v4l2_streamparm.parm.capture.timeperframe member.
+*/
+
+int v4l2_set_frame_rate(struct v4l2_driver *drv, int num, int den)
+{
+    int ret = 0;
+    struct v4l2_streamparm streamparm;
+    struct v4l2_fract *tpf;
+    memset (&streamparm, 0, sizeof (streamparm));
+    streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    tpf = &streamparm.parm.capture.timeperframe;
+    tpf->numerator = num;
+    tpf->denominator = den;
+    
+    if (xioctl(drv->fd, VIDIOC_S_PARM, &streamparm) < 0) {
+      // we have an error
+      ret = -1;
+    }
+   
+    if (den != tpf->denominator ||
+	num != tpf->numerator) {
+      printf("The V4L2 driver changed the time per frame from %d/%d to %d/%d\n",
+	     num, den,
+	     tpf->numerator, tpf->denominator);
+      ret = -1;
+    }
+    
+    //Can the ioctl succeed even if a different frame rate was set?  Weird
+    //interface...
+    return ret;
+}
+
+
 int v4l2_gettryset_fmt_cap (struct v4l2_driver *drv, enum v4l2_direction dir,
 		      struct v4l2_format *fmt,uint32_t width, uint32_t height,
 		      uint32_t pixelformat, enum v4l2_field field)
@@ -745,7 +816,7 @@ int v4l2_gettryset_fmt_cap (struct v4l2_driver *drv, enum v4l2_direction dir,
 	*/
 
 		if (dir & V4L2_TRY) {
-			ret=xioctl(drv->fd,VIDIOC_TRY_FMT,fmt);
+			ret=xioctl(drv->fd,VIDIOC_TRY_FMT, fmt);
 			if (ret < 0) {
 				perror("VIDIOC_TRY_FMT failed\n");
 			}
@@ -773,10 +844,11 @@ int v4l2_gettryset_fmt_cap (struct v4l2_driver *drv, enum v4l2_direction dir,
 		  printf("Error: asked for format %d, received %d\n",height,
 			 pix->height);
 		}
-		
-		if (pix->bytesperline == 0 ) {
-		  printf("Error: bytesperline = 0\n");
-		}
+
+		// Not set for compressed formats
+		//if (pix->bytesperline == 0 ) {
+		//  printf("Error: bytesperline = 0\n");
+		//}
 		
 		if (pix->sizeimage == 0 ) {
 		  printf("Error: sizeimage = 0\n");
@@ -1333,7 +1405,9 @@ static int dump_v4l2(int fd, int tab)
   return 0;
 }
  
-int main( int argc, char * argv[])
+#define MAX_ARGS 10
+
+int main(int argc, char *argv[])
 {
     struct v4l2_driver drv;
     struct v4l2_format fmt;
@@ -1351,22 +1425,86 @@ int main( int argc, char * argv[])
     int ok;
     int tab = 1;
     char dummy[256];
-
+    int cam_ix;
+    int argvals[MAX_ARGS];
+    int argix = 1;
+    int fix = -1;
+    int cix = -1;
+    while(argc > argix)
+      {
+	argvals[argix] = atoi(argv[argix]);
+	argix++;
+      }
+    // argvals[1] = camera ix
+    // argvals[2] = frame ix
+    if (argc >1) cix = argvals[1];
+    if (argc >2) fix = argvals[2];
 
     for (idx = 0 ; idx < 8; idx++)
       {
 	snprintf(device, sizeof(device), "/dev/video%d", idx);
-        fd = open(device, O_RDONLY);
+        fd = open(device, O_RDWR);
         if (fd >= 0)
 	  {
-	    if (-1 != ioctl(fd,VIDIOC_QUERYCAP,dummy)) {
-	      printf("### v4l2 device info [%s] ###\n",device);
+	    drv.fd = fd;
+	    if (-1 != ioctl(fd, VIDIOC_QUERYCAP, dummy)) {
+	      memset(&fmt, 0 , sizeof(fmt)); 
+	      fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	      int rc_get = xioctl (fd, VIDIOC_G_FMT, &fmt);
+	      int rc_set = xioctl (fd, VIDIOC_S_FMT, &fmt);
+	      printf("###  [%s] set rc %d get rc %d curr fmt %04x###\n"
+		     , device, rc_set, rc_get
+		     , fmt.fmt.pix.pixelformat);  
+	      //close(fd);
+	      //continue;
+	      printf("### v4l2 device info [%s] ###\n", device);
 	      dump_v4l2(fd, tab);
-	      printf("### v4l2 video formats ext [%s] ###\n",device);
+	      printf("### v4l2 video formats ext [%s] ###\n", device);
 	      print_video_formats_ext(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE);
-	      printf("### fram index  [%d] ###\n",fram_ix);
+	      printf("## 1 fram index  (%d) fix (%d) cix (%d)###\n"
+		     , fram_ix, fix, cix);
 	      ok = 1;
+	      print_fram();
+              if (idx == cix)
+		{ 
+		  printf(" using camera %d idx %d\n", cix, idx);
+		  printf(" fram_ix %d fix %d\n", fram_ix,fix);
+		   struct v4l2_fram *fram=NULL;
+		   if (fix < fram_ix)
+		    {
+		      fram = &v4l2_fram[fix];
+		    }	
+		  if (fram)
+		    {
+	
+		      //fmt.fmt.pix.pixelformat=fram->pixel_format;  
+		     
+		      memset(&fmt, 0 , sizeof(fmt)); 
+		      fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+		      rc_get = xioctl (fd, VIDIOC_G_FMT, &fmt);
+                      unsigned int old_format = fmt.fmt.pix.pixelformat;
+		      //fmt.fmt.pix.pixelformat=fram->pixel_format;
+		      //rc_set = xioctl (fd, VIDIOC_S_FMT, &fmt);
+
+		      if (0)printf("## 2  [%s] set rc %d get rc %d old fmt %04x req fmt %04x curr fmt %04x  ###\n"
+			     , device, rc_set, rc_get
+			     , old_format
+			     , fram->pixel_format
+			     , fmt.fmt.pix.pixelformat);  
+
+		      if(1)rc = v4l2_gettryset_fmt_cap (&drv, V4L2_TRY
+				    , &fmt
+				    , fram->width
+				    , fram->height
+				    , fram->pixel_format
+				    , V4L2_FIELD_ANY  );
+		      printf("## 3  [%s] try rc %d \n", device, rc);
+		      
+		      
+		    }
+		}
 	      printf("### close device  [%s] ###\n",device);
+
 	      close(fd);
 	    }
 	  }
