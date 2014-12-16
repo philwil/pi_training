@@ -756,6 +756,29 @@ use these values with the VIDIOC_S_PARM ioctl
 and fill in the v4l2_streamparm.parm.capture.timeperframe member.
 */
 
+int v4l2_get_frame_rate(struct v4l2_driver *drv)
+{
+    int ret = 0;
+    struct v4l2_streamparm streamparm;
+    struct v4l2_fract *tpf;
+    memset (&streamparm, 0, sizeof (streamparm));
+    streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    tpf = &streamparm.parm.capture.timeperframe;
+    
+    if (xioctl(drv->fd, VIDIOC_G_PARM, &streamparm) < 0) {
+       printf(" error getting streamparmm\n");
+      // we have an error
+      ret = -1;
+    }
+   
+    else
+      {
+	printf("The V4L2 driver time per frame is %d/%d\n",
+	       tpf->numerator, tpf->denominator);
+      }
+    return ret;
+}
+
 int v4l2_set_frame_rate(struct v4l2_driver *drv, int num, int den)
 {
     int ret = 0;
@@ -1499,6 +1522,9 @@ int main(int argc, char *argv[])
 				    , fram->pixel_format
 				    , V4L2_FIELD_ANY  );
 		      printf("## 3  [%s] try rc %d \n", device, rc);
+		      v4l2_get_frame_rate(&drv);
+		      v4l2_set_frame_rate(&drv, fram->nom, fram->den );
+		      v4l2_get_frame_rate(&drv);
 		      
 		      
 		    }
