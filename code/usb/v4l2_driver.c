@@ -161,7 +161,7 @@ static char *prt_caps(uint32_t caps)
     return s;
 }
 
-static void prt_buf_info(char *name,struct v4l2_buffer *p)
+static void prt_buf_info(char *name, struct v4l2_buffer *p)
 {
     struct v4l2_timecode *tc=&p->timecode;
     
@@ -843,6 +843,10 @@ int v4l2_gettryset_fmt_cap (struct v4l2_driver *drv, enum v4l2_direction dir,
 	if (ret < 0) {
 	  perror("VIDIOC_TRY_FMT failed\n");
 	}
+	else
+	  {
+	    drv->sizeimage=pix->sizeimage;
+	  }
       }
       
       if (dir & V4L2_SET) {
@@ -898,25 +902,28 @@ int v4l2_gettryset_fmt_cap (struct v4l2_driver *drv, enum v4l2_direction dir,
  ****************************************************************************/
 int v4l2_get_parm (struct v4l2_driver *drv)
 {
-	int ret;
-	struct v4l2_captureparm *c;
-
-	drv->parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	if ((ret=xioctl(drv->fd,VIDIOC_G_PARM,&drv->parm))>=0) {
-		c=&drv->parm.parm.capture;
-		printf ("PARM: capability=%d, capturemode=%d, %.3f fps "
-			"ext=%x, readbuf=%d\n",
-			c->capability,
-			c->capturemode,
-			c->timeperframe.denominator*1./c->timeperframe.numerator,
-			c->extendedmode, c->readbuffers);
-	} else {
-		ret=errno;
-
-		perror ("VIDIOC_G_PARM");
-	}
-
-	return ret;
+    int ret;
+    struct v4l2_captureparm *c;
+    
+    drv->parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    if ((ret=xioctl(drv->fd,VIDIOC_G_PARM,&drv->parm))>=0) 
+      {
+	c=&drv->parm.parm.capture;
+	printf ("PARM: capability=%d, capturemode=%d, %.3f fps "
+		"ext=%x, readbuf=%d\n",
+		c->capability,
+		c->capturemode,
+		c->timeperframe.denominator*1./c->timeperframe.numerator,
+		c->extendedmode, c->readbuffers);
+      }
+    else 
+      {
+	ret=errno;
+	
+	perror ("VIDIOC_G_PARM");
+      }
+    
+    return ret;
 }
 
 /****************************************************************************
@@ -925,54 +932,72 @@ int v4l2_get_parm (struct v4l2_driver *drv)
 
 int v4l2_free_bufs(struct v4l2_driver *drv)
 {
-	unsigned int i;
+    unsigned int i;
+    int rc=-1; 
+    enum v4l2_buf_type type;
 
-	if (drv->n_bufs == 0)
-		return 0;
+    printf(" free_buffs n_bufs %d\n", drv->n_bufs);
 
-	/* Requests the driver to free all buffers */
-	drv->reqbuf.count  = 0;
-	drv->reqbuf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	drv->reqbuf.memory = V4L2_MEMORY_MMAP;
+    if (drv->n_bufs == 0)
+        return 0;
 
-	/* stop capture */
-	if (xioctl(drv->fd,VIDIOC_STREAMOFF,&drv->reqbuf.type)<0)
-		return errno;
+    memset(&drv->reqbuf, 0 , sizeof (struct v4l2_requestbuffers));
+    
+    /* Requests the driver to free all buffers */
+    drv->reqbuf.count  = 0;
+    drv->reqbuf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    drv->reqbuf.memory = V4L2_MEMORY_MMAP;
+    type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    
+    /* stop capture */
+    printf(" before stop capture fd (%d) rc (%d)\n", drv->fd, rc);
 
-	sleep (1);	// FIXME: Should check if all buffers are stopped
+    //rc = xioctl(drv->fd, VIDIOC_STREAMOFF, &drv->reqbuf.type);
+    rc = xioctl(drv->fd, VIDIOC_STREAMOFF, &type);
+    printf(" after stop capture rc (%d)\n", rc);
+    if (rc<0)
+      return errno;
 
-/* V4L2 API says REQBUFS with count=0 should be used to release buffer.
-   However, video-buf.c doesn't implement it.
- */
+    sleep (1);	// FIXME: Should check if all buffers are stopped
+    
+    /* V4L2 API says REQBUFS with count=0 should be used to release buffer.
+       However, video-buf.c doesn't implement it.
+    */
 #if 0
-	if (xioctl(drv->fd,VIDIOC_REQBUFS,&drv->reqbuf)<0) {
-		printf("reqbufs error while freeing buffers\n");
-		perror("reqbufs while freeing buffers");
-		return errno;
-	}
+    if (xioctl(drv->fd,VIDIOC_REQBUFS,&drv->reqbuf)<0) {
+      printf("reqbufs error while freeing buffers\n");
+      perror("reqbufs while freeing buffers");
+      return errno;
+    }
 #endif
+    
+    if (drv->reqbuf.count != 0) 
+      {
+	fprintf(stderr,"REQBUFS returned %d buffers while asking for freeing it!\n",
+		drv->reqbuf.count);
+      }
 
-	if (drv->reqbuf.count != 0) {
-		fprintf(stderr,"REQBUFS returned %d buffers while asking for freeing it!\n",
-			drv->reqbuf.count);
-	}
+    for (i = 0; i < drv->n_bufs; i++) 
+      {
+	if (drv->bufs[i].length)
+	  {
+	    munmap(drv->bufs[i].start, drv->bufs[i].length);
+	  }
+	if (drv->v4l2_buffers[i])
+	  {
+	    free (drv->v4l2_buffers[i]);
+	  }
+      }
+    free(drv->v4l2_buffers);
+    free(drv->bufs);
 
-	for (i = 0; i < drv->n_bufs; i++) {
-		if (drv->bufs[i].length)
-			munmap(drv->bufs[i].start, drv->bufs[i].length);
-		if (drv->v4l2_bufs[i])
-			free (drv->v4l2_bufs[i]);
-	}
+    drv->v4l2_buffers=NULL;
+    drv->bufs=NULL;
+    drv->n_bufs=0;
 
-	free(drv->v4l2_bufs);
-	free(drv->bufs);
-
-	drv->v4l2_bufs=NULL;
-	drv->bufs=NULL;
-	drv->n_bufs=0;
-
-	return 0;
+    return 0;
 } 
+
 //        fmt->fmt.pix.pixelformat=0x47504a4d;  // "MJPG" 
 //        fmt->fmt.pix.pixelformat=V4L2_PIX_FMT_JPEG  // "MJPG" 
 int v4l2_set_fmt(struct v4l2_driver *drv, struct v4l2_format *fmt)
@@ -1025,86 +1050,102 @@ int v4l2_get_fmt(struct v4l2_driver *drv, struct v4l2_format *fmt)
 
 int v4l2_mmap_bufs(struct v4l2_driver *drv, unsigned int num_buffers)
 {
-	/* Frees previous allocations, if required */
-	v4l2_free_bufs(drv);
+  /* Frees previous allocations, if required */
+  v4l2_free_bufs(drv);
+  printf(" drv->sizeimage 1 (%d)\n", drv->sizeimage);
 
-	if (drv->sizeimage==0) {
-		printf("Image size is zero! Can't proceed\n");
-		return -1;
+  if (drv->sizeimage==0) 
+    {
+      printf("Image size is zero! Can't proceed\n");
+      return -1;
+    }
+
+  /* Requests the specified number of buffers */
+  drv->reqbuf.count  = num_buffers;
+  drv->reqbuf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+  drv->reqbuf.memory = V4L2_MEMORY_MMAP;
+  
+  if (xioctl(drv->fd, VIDIOC_REQBUFS, &drv->reqbuf)<0) 
+    {
+      printf("reqbufs failed ..\n");
+      perror("reqbufs");
+      return -1;
+    }
+  
+  if (drv->debug)
+    {
+      printf ("REQBUFS: count=%d, type=%s, memory=%s\n",
+	      drv->reqbuf.count,
+	      prt_names(drv->reqbuf.type,v4l2_type_names),
+	      prt_names(drv->reqbuf.memory,v4l2_memory_names));
+    }
+  /* Allocates the required number of buffers */
+  drv->v4l2_buffers=calloc(drv->reqbuf.count, sizeof(*drv->v4l2_buffers));
+  assert(drv->v4l2_buffers!=NULL);
+  drv->bufs=calloc(drv->reqbuf.count, sizeof(*drv->bufs));
+  assert(drv->bufs!=NULL);
+  
+  printf(" drv->sizeimage 2 (%d)\n", drv->sizeimage);
+
+  for (drv->n_bufs = 0; drv->n_bufs < drv->reqbuf.count; drv->n_bufs++) 
+    {
+      struct v4l2_buffer *p;
+      
+      /* Requests kernel buffers to be mmapped */
+      p=drv->v4l2_buffers[drv->n_bufs]=calloc(1,sizeof(*p));
+      assert (p!=NULL);
+      p->index  = drv->n_bufs;
+      p->type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+      p->memory = V4L2_MEMORY_MMAP;
+      if (xioctl(drv->fd,VIDIOC_QUERYBUF,p)<0) 
+	{
+	  int ret=errno;
+	  perror("querybuf");
+	  
+	  free (drv->v4l2_buffers[drv->n_bufs]);
+	  
+	  v4l2_free_bufs(drv);
+	  return ret;
 	}
-	/* Requests the specified number of buffers */
-	drv->reqbuf.count  = num_buffers;
-	drv->reqbuf.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	drv->reqbuf.memory = V4L2_MEMORY_MMAP;
-
-	if (xioctl(drv->fd,VIDIOC_REQBUFS,&drv->reqbuf)<0) {
-		printf("reqbufs failed ..\n");
-		perror("reqbufs");
-		return errno;
+	  
+      if (drv->debug)
+	prt_buf_info("QUERYBUF 1", p);
+      
+      printf(" drv->sizeimage (%d) p->length (%d)  \n"
+	     , drv->sizeimage, p->length);
+      if (drv->sizeimage != p->length) 
+	{
+	  if (drv->sizeimage < p->length) 
+	    {
+	      printf ("QUERYBUF: ERROR: VIDIOC_S_FMT said buffer should have %d size, but received %d from QUERYBUF!\n",
+		      drv->sizeimage, p->length);
+	    } 
+	  else 
+	    {
+	      printf ("QUERYBUF: Expecting %d size, received %d buff length\n",
+		      drv->sizeimage, p->length);
+	    }
 	}
-
-	if (drv->debug)
-		printf ("REQBUFS: count=%d, type=%s, memory=%s\n",
-				drv->reqbuf.count,
-				prt_names(drv->reqbuf.type,v4l2_type_names),
-				prt_names(drv->reqbuf.memory,v4l2_memory_names));
-
-	/* Allocates the required number of buffers */
-	drv->v4l2_bufs=calloc(drv->reqbuf.count, sizeof(*drv->v4l2_bufs));
-	assert(drv->v4l2_bufs!=NULL);
-	drv->bufs=calloc(drv->reqbuf.count, sizeof(*drv->bufs));
-	assert(drv->bufs!=NULL);
-
-	for (drv->n_bufs = 0; drv->n_bufs < drv->reqbuf.count; drv->n_bufs++) {
-		struct v4l2_buffer *p;
-
-		/* Requests kernel buffers to be mmapped */
-		p=drv->v4l2_bufs[drv->n_bufs]=calloc(1,sizeof(*p));
-		assert (p!=NULL);
-		p->index  = drv->n_bufs;
-		p->type   = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-		p->memory = V4L2_MEMORY_MMAP;
-		if (xioctl(drv->fd,VIDIOC_QUERYBUF,p)<0) {
-			int ret=errno;
-			perror("querybuf");
-
-			free (drv->v4l2_bufs[drv->n_bufs]);
-
-			v4l2_free_bufs(drv);
-			return ret;
-		}
-
-		if (drv->debug)
-			prt_buf_info("QUERYBUF",p);
-
-		if (drv->sizeimage != p->length) {
-			if (drv->sizeimage < p->length) {
-				printf ("QUERYBUF: ERROR: VIDIOC_S_FMT said buffer should have %d size, but received %d from QUERYBUF!\n",
-					drv->sizeimage, p->length);
-			} else {
-				printf ("QUERYBUF: Expecting %d size, received %d buff length\n",
-					drv->sizeimage, p->length);
-			}
-		}
-
-		drv->bufs[drv->n_bufs].length = p->length;
-		drv->bufs[drv->n_bufs].start = 	mmap (NULL,	/* start anywhere */
-			      p->length,
-			      PROT_READ | PROT_WRITE,		/* required */
-			      MAP_SHARED,			/* recommended */
-			      drv->fd, p->m.offset);
-
-
-		if (MAP_FAILED == drv->bufs[drv->n_bufs].start) {
-			perror("mmap");
-
-			free (drv->v4l2_bufs[drv->n_bufs]);
-			v4l2_free_bufs(drv);
-			return errno;
-		}
+      
+      drv->bufs[drv->n_bufs].length = p->length;
+      drv->bufs[drv->n_bufs].start = mmap (NULL,	/* start anywhere */
+					   p->length,
+					   PROT_READ | PROT_WRITE,		/* required */
+					   MAP_SHARED,			/* recommended */
+					   drv->fd, p->m.offset);
+      
+      
+      if (MAP_FAILED == drv->bufs[drv->n_bufs].start) 
+	{
+	  perror("mmap");
+	  
+	  free (drv->v4l2_buffers[drv->n_bufs]);
+	  v4l2_free_bufs(drv);
+	  return errno;
 	}
-
-	return 0;
+    }
+  
+  return 0;
 }
 
 /* Returns <0, if error, 0 if nothing to read and <size>, if something
@@ -1165,41 +1206,50 @@ int v4l2_rcvbuf(struct v4l2_driver *drv, v4l2_recebe_buffer *rec_buf)
 
 int v4l2_start_streaming(struct v4l2_driver *drv)
 {
-	uint32_t	i;
-	struct v4l2_buffer buf;
-
-	if (drv->debug)
-		printf("Activating %d queues\n", drv->n_bufs);
-	for (i = 0; i < drv->n_bufs; i++) {
-		int res;
-
-		memset(&buf, 0, sizeof(buf));
-		buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-		buf.memory = V4L2_MEMORY_MMAP;
-		buf.index  = i;
-
-		res = xioctl (drv->fd, VIDIOC_QBUF, &buf);
-
-		if (!res)
-			prt_buf_info("QBUF",&buf);
-		else {
-			perror("qbuf");
-			return errno;
-		}
+    uint32_t	i;
+    struct v4l2_buffer buf;
+  
+    if (drv->debug)
+        printf("Activating %d queues\n", drv->n_bufs);
+    for (i = 0; i < drv->n_bufs; i++) 
+    {
+	int res;
+	
+	memset(&buf, 0, sizeof(buf));
+	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	buf.memory = V4L2_MEMORY_MMAP;
+	buf.index  = i;
+	
+	res = xioctl (drv->fd, VIDIOC_QBUF, &buf);
+	
+	if (res == 0)
+	{
+	    prt_buf_info("QBUF",&buf);
 	}
+	else 
+	{
+	    perror("qbuf");
+	    return errno;
+	}
+    }
+    
+    /* Activates stream */
+    if (drv->debug)
+        printf("Enabling streaming\n");
+    
+    if (xioctl(drv->fd, VIDIOC_STREAMON, &drv->reqbuf.type)<0)
+        return errno;
 
-	/* Activates stream */
-	if (drv->debug)
-		printf("Enabling streaming\n");
-
-	if (xioctl(drv->fd,VIDIOC_STREAMON,&drv->reqbuf.type)<0)
-		return errno;
-
-	return 0;
+    if (drv->debug)
+        printf("Enabling streaming done\n");
+    
+    return 0;
 }
 
 int v4l2_stop_streaming(struct v4l2_driver *drv)
 {
+        printf(" stop stream  1.1 ....\n");
+
 	v4l2_free_bufs(drv);
 
 	return 0;
@@ -1441,13 +1491,16 @@ static int run_v4l2(struct v4l2_driver *drv, int num_buffers, int frames)
 	v4l2_close (drv);
 	return rc;
       }
-    printf(" start stream  ....\n");
+    //return -1;
+    printf(" start stream  1 ....\n");
     bad  =  0;
     v4l2_start_streaming(drv);
+    printf(" start stream  2 ....\n");
     for (i=0; bad<100 && i< frames; i++)
       {
 	printf(" recv #%d  ....", i);
-	rc = v4l2_rcvbuf(drv, NULL /*v4l2_recebe_buffer *rec_buf*/);
+	rc = -16;
+	//rc = v4l2_rcvbuf(drv, NULL /*v4l2_recebe_buffer *rec_buf*/);
 	printf(" rc = %d  ....\n", rc);
 	if (rc == -16) 
 	  {
@@ -1457,8 +1510,12 @@ static int run_v4l2(struct v4l2_driver *drv, int num_buffers, int frames)
 	    usleep(1024 *10);
 	  }
       }
+    printf(" stop stream  1 ....\n");
     v4l2_stop_streaming(drv);
+    printf(" stop stream  2 ....\n");
     v4l2_close (drv);
+    printf(" stop stream  3 ....\n");
+    rc = 0;
     return rc;
 }
 
@@ -1494,6 +1551,10 @@ int main(int argc, char *argv[])
 	argvals[argix] = atoi(argv[argix]);
 	argix++;
       }
+    drv.stds = NULL;
+    drv.inputs =  NULL;
+    drv.fmt_caps = NULL;
+
     // argvals[1] = camera ix
     // argvals[2] = frame ix
     if (argc >1) cix = argvals[1];
@@ -1559,15 +1620,18 @@ int main(int argc, char *argv[])
 						    , fram->pixel_format
 						    , V4L2_FIELD_ANY  );
 		  printf("## 3  [%s] try rc %d \n", device, rc);
+		  printf("## 3,1  [%s] drv.sizeimage (%d) \n"
+			 , device, drv.sizeimage);
 		  v4l2_get_frame_rate(&drv);
 		  v4l2_set_frame_rate(&drv, fram->nom, fram->den );
 		  v4l2_get_frame_rate(&drv);
 		  printf("## 4  [%s] frames %d \n", device, nfram);
 		  if(nfram > 0)
-		    {
+		  {
 		      drv.n_bufs = 0;
-		      run_v4l2(&drv, 4, nfram);
-		    }
+		      rc = run_v4l2(&drv, 4, nfram);
+		      if(rc != 0)v4l2_close (&drv);
+		  }
 		  //drv.sizeimage=
 
 		}

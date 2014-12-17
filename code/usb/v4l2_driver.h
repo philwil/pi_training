@@ -43,7 +43,7 @@ struct v4l2_driver {
 
 	/* Stream control */
 	struct v4l2_requestbuffers	reqbuf;
-	struct v4l2_buffer		**v4l2_bufs;
+	struct v4l2_buffer		**v4l2_buffers;
 	struct v4l2_t_buf 		*bufs;
 	uint32_t			sizeimage,n_bufs;
 
