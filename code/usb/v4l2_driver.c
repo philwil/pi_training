@@ -813,84 +813,84 @@ int v4l2_gettryset_fmt_cap (struct v4l2_driver *drv, enum v4l2_direction dir,
 		      struct v4l2_format *fmt,uint32_t width, uint32_t height,
 		      uint32_t pixelformat, enum v4l2_field field)
 {
-	struct v4l2_pix_format  *pix=&(fmt->fmt.pix);
-	int			ret=0;
+    struct v4l2_pix_format  *pix=&(fmt->fmt.pix);
+    int			ret=0;
 
-	fmt->type=V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	if (dir == V4L2_GET) {
-		ret=xioctl(drv->fd,VIDIOC_G_FMT,fmt);
-		if (ret < 0) {
-			ret=errno;
-			perror("VIDIOC_G_FMT failed\n");
-		}
-		return ret;
-	} else if (dir & (~(V4L2_TRY|V4L2_SET)) ) {
-		perror ("Invalid direction\n");
-		return EINVAL;
+    fmt->type=V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    if (dir == V4L2_GET) {
+      ret=xioctl(drv->fd,VIDIOC_G_FMT,fmt);
+      if (ret < 0) {
+	ret=errno;
+	perror("VIDIOC_G_FMT failed\n");
+      }
+      return ret;
+    } else if (dir & (~(V4L2_TRY|V4L2_SET)) ) {
+      perror ("Invalid direction\n");
+      return EINVAL;
+    }
+    
+    if (dir & (V4L2_TRY|V4L2_SET)) {
+      pix->width       = width;
+      pix->height      = height;
+      pix->pixelformat = pixelformat;
+      pix->field       = field;
+      /*
+	enum v4l2_colorspace	colorspace;
+      */
+      
+      if (dir & V4L2_TRY) {
+	ret=xioctl(drv->fd,VIDIOC_TRY_FMT, fmt);
+	if (ret < 0) {
+	  perror("VIDIOC_TRY_FMT failed\n");
 	}
-
-	if (dir & (V4L2_TRY|V4L2_SET)) {
-		pix->width       = width;
-		pix->height      = height;
-		pix->pixelformat = pixelformat;
-		pix->field       = field;
-	/*
-		enum v4l2_colorspace	colorspace;
-	*/
-
-		if (dir & V4L2_TRY) {
-			ret=xioctl(drv->fd,VIDIOC_TRY_FMT, fmt);
-			if (ret < 0) {
-				perror("VIDIOC_TRY_FMT failed\n");
-			}
-		}
-
-		if (dir & V4L2_SET) {
-			ret=xioctl(drv->fd,VIDIOC_S_FMT,fmt);
-			if (ret < 0) {
-				perror("VIDIOC_S_FMT failed\n");
-			}
-			drv->sizeimage=pix->sizeimage;
-		}
-
-		if (pix->pixelformat != pixelformat) {
-		  printf("Error: asked for format %d, received %d",pixelformat,
-			 pix->pixelformat);
-		}
-
-		if (pix->width != width) {
-		  printf("Error: asked for format %d, received %d\n",width,
-			 pix->width);
-		}
-
-		if (pix->height != height) {
-		  printf("Error: asked for format %d, received %d\n",height,
-			 pix->height);
-		}
-
-		// Not set for compressed formats
-		//if (pix->bytesperline == 0 ) {
-		//  printf("Error: bytesperline = 0\n");
-		//}
-		
-		if (pix->sizeimage == 0 ) {
-		  printf("Error: sizeimage = 0\n");
-		}
+      }
+      
+      if (dir & V4L2_SET) {
+	ret=xioctl(drv->fd,VIDIOC_S_FMT,fmt);
+	if (ret < 0) {
+	  perror("VIDIOC_S_FMT failed\n");
 	}
-
-	if (drv->debug)
-		printf( "FMT SET: %dx%d, fourcc=%c%c%c%c, %d bytes/line,"
-			" %d bytes/frame, colorspace=0x%08x\n",
-			pix->width,pix->height,
-			pix->pixelformat & 0xff,
-			(pix->pixelformat >>  8) & 0xff,
-			(pix->pixelformat >> 16) & 0xff,
-			(pix->pixelformat >> 24) & 0xff,
-			pix->bytesperline,
-			pix->sizeimage,
-			pix->colorspace);
-
-	return 0;
+	drv->sizeimage=pix->sizeimage;
+      }
+      
+      if (pix->pixelformat != pixelformat) {
+	printf("Error: asked for format %d, received %d",pixelformat,
+	       pix->pixelformat);
+      }
+      
+      if (pix->width != width) {
+	printf("Error: asked for format %d, received %d\n",width,
+	       pix->width);
+      }
+      
+      if (pix->height != height) {
+	printf("Error: asked for format %d, received %d\n",height,
+	       pix->height);
+      }
+      
+      // Not set for compressed formats
+      //if (pix->bytesperline == 0 ) {
+      //  printf("Error: bytesperline = 0\n");
+      //}
+      
+      if (pix->sizeimage == 0 ) {
+	printf("Error: sizeimage = 0\n");
+      }
+    }
+    
+    if (drv->debug)
+      printf( "FMT SET: %dx%d, fourcc=%c%c%c%c, %d bytes/line,"
+	      " %d bytes/frame, colorspace=0x%08x\n",
+	      pix->width,pix->height,
+	      pix->pixelformat & 0xff,
+	      (pix->pixelformat >>  8) & 0xff,
+	      (pix->pixelformat >> 16) & 0xff,
+	      (pix->pixelformat >> 24) & 0xff,
+	      pix->bytesperline,
+	      pix->sizeimage,
+	      pix->colorspace);
+    
+    return 0;
 }
 
 /****************************************************************************
@@ -927,7 +927,7 @@ int v4l2_free_bufs(struct v4l2_driver *drv)
 {
 	unsigned int i;
 
-	if (!drv->n_bufs)
+	if (drv->n_bufs == 0)
 		return 0;
 
 	/* Requests the driver to free all buffers */
@@ -1428,6 +1428,40 @@ static int dump_v4l2(int fd, int tab)
   return 0;
 }
  
+static int run_v4l2(struct v4l2_driver *drv, int num_buffers, int frames)
+{
+    int rc;
+    int bad;
+    int i;
+    printf(" map buffers  ....\n");
+    rc  = v4l2_mmap_bufs(drv, num_buffers);
+    if (rc != 0)
+      {
+	printf("v4l2_mmap_bufs error rc %d\n", rc);
+	v4l2_close (drv);
+	return rc;
+      }
+    printf(" start stream  ....\n");
+    bad  =  0;
+    v4l2_start_streaming(drv);
+    for (i=0; bad<100 && i< frames; i++)
+      {
+	printf(" recv #%d  ....", i);
+	rc = v4l2_rcvbuf(drv, NULL /*v4l2_recebe_buffer *rec_buf*/);
+	printf(" rc = %d  ....\n", rc);
+	if (rc == -16) 
+	  {
+	    i--;
+	    bad++;
+	    // TODO sleep for frame interval
+	    usleep(1024 *10);
+	  }
+      }
+    v4l2_stop_streaming(drv);
+    v4l2_close (drv);
+    return rc;
+}
+
 #define MAX_ARGS 10
 
 int main(int argc, char *argv[])
@@ -1453,6 +1487,8 @@ int main(int argc, char *argv[])
     int argix = 1;
     int fix = -1;
     int cix = -1;
+    int nfram  = 0;
+
     while(argc > argix)
       {
 	argvals[argix] = atoi(argv[argix]);
@@ -1462,168 +1498,175 @@ int main(int argc, char *argv[])
     // argvals[2] = frame ix
     if (argc >1) cix = argvals[1];
     if (argc >2) fix = argvals[2];
-
-    for (idx = 0 ; idx < 8; idx++)
+    if (argc >3) nfram = argvals[3];
+    
+    for (idx = 0; idx < 8; idx++)
       {
 	snprintf(device, sizeof(device), "/dev/video%d", idx);
         fd = open(device, O_RDWR);
-        if (fd >= 0)
-	  {
-	    drv.fd = fd;
-	    if (-1 != ioctl(fd, VIDIOC_QUERYCAP, dummy)) {
-	      memset(&fmt, 0 , sizeof(fmt)); 
-	      fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	      int rc_get = xioctl (fd, VIDIOC_G_FMT, &fmt);
-	      int rc_set = xioctl (fd, VIDIOC_S_FMT, &fmt);
-	      printf("###  [%s] set rc %d get rc %d curr fmt %04x###\n"
-		     , device, rc_set, rc_get
-		     , fmt.fmt.pix.pixelformat);  
-	      //close(fd);
-	      //continue;
-	      printf("### v4l2 device info [%s] ###\n", device);
-	      dump_v4l2(fd, tab);
-	      printf("### v4l2 video formats ext [%s] ###\n", device);
-	      print_video_formats_ext(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE);
-	      printf("## 1 fram index  (%d) fix (%d) cix (%d)###\n"
-		     , fram_ix, fix, cix);
-	      ok = 1;
-	      print_fram();
-              if (idx == cix)
-		{ 
-		  printf(" using camera %d idx %d\n", cix, idx);
-		  printf(" fram_ix %d fix %d\n", fram_ix,fix);
-		   struct v4l2_fram *fram=NULL;
-		   if (fix < fram_ix)
-		    {
-		      fram = &v4l2_fram[fix];
-		    }	
-		  if (fram)
-		    {
+        if (fd < 0) continue;
 	
-		      //fmt.fmt.pix.pixelformat=fram->pixel_format;  
-		     
-		      memset(&fmt, 0 , sizeof(fmt)); 
-		      fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-		      rc_get = xioctl (fd, VIDIOC_G_FMT, &fmt);
-                      unsigned int old_format = fmt.fmt.pix.pixelformat;
-		      //fmt.fmt.pix.pixelformat=fram->pixel_format;
-		      //rc_set = xioctl (fd, VIDIOC_S_FMT, &fmt);
-
-		      if (0)printf("## 2  [%s] set rc %d get rc %d old fmt %04x req fmt %04x curr fmt %04x  ###\n"
-			     , device, rc_set, rc_get
-			     , old_format
-			     , fram->pixel_format
-			     , fmt.fmt.pix.pixelformat);  
-
-		      if(1)rc = v4l2_gettryset_fmt_cap (&drv, V4L2_TRY
-				    , &fmt
-				    , fram->width
-				    , fram->height
-				    , fram->pixel_format
-				    , V4L2_FIELD_ANY  );
-		      printf("## 3  [%s] try rc %d \n", device, rc);
-		      v4l2_get_frame_rate(&drv);
-		      v4l2_set_frame_rate(&drv, fram->nom, fram->den );
-		      v4l2_get_frame_rate(&drv);
-		      
-		      
+	drv.fd = fd;
+	if (-1 != ioctl(fd, VIDIOC_QUERYCAP, dummy)) {
+	  memset(&fmt, 0 , sizeof(fmt)); 
+	  fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+	  int rc_get = xioctl (fd, VIDIOC_G_FMT, &fmt);
+	  int rc_set = xioctl (fd, VIDIOC_S_FMT, &fmt);
+	  printf("###  [%s] set rc %d get rc %d curr fmt %04x###\n"
+		 , device, rc_set, rc_get
+		 , fmt.fmt.pix.pixelformat);  
+	  //close(fd);
+	  //continue;
+	  printf("### v4l2 device info [%s] ###\n", device);
+	  dump_v4l2(fd, tab);
+	  printf("### v4l2 video formats ext [%s] ###\n", device);
+	  print_video_formats_ext(fd, V4L2_BUF_TYPE_VIDEO_CAPTURE);
+	  printf("## 1 fram index  (%d) fix (%d) cix (%d)###\n"
+		 , fram_ix, fix, cix);
+	  ok = 1;
+	  print_fram();
+	  if (idx == cix)
+	    { 
+	      printf(" using camera %d idx %d\n", cix, idx);
+	      printf(" fram_ix %d fix %d\n", fram_ix,fix);
+	      struct v4l2_fram *fram=NULL;
+	      if (fix < fram_ix)
+		{
+		  fram = &v4l2_fram[fix];
+		}	
+	      if (fram)
+		{
+		  
+		  //fmt.fmt.pix.pixelformat=fram->pixel_format;  
+		  
+		  memset(&fmt, 0 , sizeof(fmt)); 
+		  fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+		  rc_get = xioctl (fd, VIDIOC_G_FMT, &fmt);
+		  unsigned int old_format = fmt.fmt.pix.pixelformat;
+		  //fmt.fmt.pix.pixelformat=fram->pixel_format;
+		  //rc_set = xioctl (fd, VIDIOC_S_FMT, &fmt);
+		  
+		  if (0)printf("## 2  [%s] set rc %d get rc %d old fmt %04x req fmt %04x curr fmt %04x  ###\n"
+			       , device, rc_set, rc_get
+			       , old_format
+			       , fram->pixel_format
+			       , fmt.fmt.pix.pixelformat);  
+		  
+		  if(1)rc = v4l2_gettryset_fmt_cap (&drv, V4L2_TRY
+						    , &fmt
+						    , fram->width
+						    , fram->height
+						    , fram->pixel_format
+						    , V4L2_FIELD_ANY  );
+		  printf("## 3  [%s] try rc %d \n", device, rc);
+		  v4l2_get_frame_rate(&drv);
+		  v4l2_set_frame_rate(&drv, fram->nom, fram->den );
+		  v4l2_get_frame_rate(&drv);
+		  printf("## 4  [%s] frames %d \n", device, nfram);
+		  if(nfram > 0)
+		    {
+		      drv.n_bufs = 0;
+		      run_v4l2(&drv, 4, nfram);
 		    }
+		  //drv.sizeimage=
+
 		}
-	      printf("### close device  [%s] ###\n",device);
-
-	      close(fd);
 	    }
-	  }
-	continue;
-
-	rc = v4l2_open(device, debug, &drv);
-	if(rc == 0)
-	  {
-	    printf(" dev [%s] idx %d open rc = %d\n", device, idx, rc);
-
-	    printf(" get parm ....\n");
-	    v4l2_get_parm (&drv);
-
-	    printf(" enum inputs ....\n");
-	    v4l2_enum_input (&drv);
-
-	    printf(" enum stds ....\n");
-	    v4l2_enum_stds (&drv);
-
-	    printf(" get fmt  ....\n");
-	    v4l2_get_fmt(&drv, &fmt);
-
-	    //V4L2_PIX_FMT_YUYVP
-	    printf(" set fmt  YUYV....\n");
-	    fmt.fmt.pix.pixelformat=V4L2_PIX_FMT_YUYV;  // "YUYV" 
-	    v4l2_set_fmt(&drv, &fmt);
-
-	    //V4L2_PIX_FMT_YUV422P
-	    printf(" set fmt  YUYVP....\n");
-	    fmt.fmt.pix.pixelformat=V4L2_PIX_FMT_YUV422P;  // "YUYV" 
-	    v4l2_set_fmt(&drv, &fmt);
-
-	    printf(" set fmt  JPEG....\n");
-	    fmt.fmt.pix.pixelformat=V4L2_PIX_FMT_JPEG;  // "JPEG" 
-	    v4l2_set_fmt(&drv, &fmt);
-
-	    printf(" set fmt  MPEG....\n");
-	    fmt.fmt.pix.pixelformat=V4L2_PIX_FMT_MPEG;  // "MPEG" 
-	    v4l2_set_fmt(&drv, &fmt);
-
-	    printf(" set fmt  MJPEG ??....\n");
-	    fmt.fmt.pix.pixelformat=0x47504a4d;
-	    v4l2_set_fmt(&drv, &fmt);
-
-	    printf(" get fmt 2  ....\n");
-	    v4l2_get_fmt(&drv, &fmt);
-
-	    drv.sizeimage =  
-	      fmt.fmt.pix.bytesperline
-	      * fmt.fmt.pix.height;
-            if (drv.sizeimage == 0) {
-	      drv.sizeimage=614400;
-	    }
-	    height = fmt.fmt.pix.height;
-	    width = fmt.fmt.pix.width;
-	    pixelformat = (uint32_t)fmt.fmt.pix.pixelformat;
-
-	    printf(" get cap  ....\n");
-	    v4l2_gettryset_fmt_cap (&drv, V4L2_GET
-				    , &fmt
-				    , width
-				    , height
-				    , pixelformat
-				    , V4L2_FIELD_ANY  );
-	    num_buffers  = 4;
-
-
-	    printf(" map buffers  ....\n");
-	    rc  = v4l2_mmap_bufs(&drv, num_buffers);
-	    if (rc != 0)
-	      {
-		printf("v4l2_mmap_bufs error rc %d\n", rc);
-		v4l2_close (&drv);
-		continue;
-	      }
-	    printf(" start stream  ....\n");
-	    bad  =  0;
-	    v4l2_start_streaming(&drv);
-	    for (i=0; bad<100 && i< 32; i++)
-	    {
-	        printf(" recv #%d  ....", i);
-		rc = v4l2_rcvbuf(&drv, NULL /*v4l2_recebe_buffer *rec_buf*/);
-	        printf(" rc = %d  ....\n", rc);
-		if (rc == -16) 
-		  {
-		    i--;
-                    bad++;
-		    usleep(1024 *10);
-		  }
-	    }
-	    v4l2_stop_streaming(&drv);
-	    v4l2_close (&drv);
-	  }
+	  printf("### close device  [%s] ###\n",device);
+	  
+	  close(fd);
+	}
       }
     return 0;
 }
+#if 0
+    // move past here to try to capture some frames
+    rc = v4l2_open(device, debug, &drv);
+    if(rc == 0)
+      {
+	printf(" dev [%s] idx %d open rc = %d\n", device, idx, rc);
+	
+	printf(" get parm ....\n");
+	v4l2_get_parm (&drv);
+	
+	printf(" enum inputs ....\n");
+	v4l2_enum_input (&drv);
+	
+	printf(" enum stds ....\n");
+	v4l2_enum_stds (&drv);
+	
+	printf(" get fmt  ....\n");
+	v4l2_get_fmt(&drv, &fmt);
+	
+	//V4L2_PIX_FMT_YUYVP
+	printf(" set fmt  YUYV....\n");
+	fmt.fmt.pix.pixelformat=V4L2_PIX_FMT_YUYV;  // "YUYV" 
+	v4l2_set_fmt(&drv, &fmt);
+	
+	//V4L2_PIX_FMT_YUV422P
+	printf(" set fmt  YUYVP....\n");
+	fmt.fmt.pix.pixelformat=V4L2_PIX_FMT_YUV422P;  // "YUYV" 
+	v4l2_set_fmt(&drv, &fmt);
+	
+	printf(" set fmt  JPEG....\n");
+	fmt.fmt.pix.pixelformat=V4L2_PIX_FMT_JPEG;  // "JPEG" 
+	v4l2_set_fmt(&drv, &fmt);
+	
+	printf(" set fmt  MPEG....\n");
+	fmt.fmt.pix.pixelformat=V4L2_PIX_FMT_MPEG;  // "MPEG" 
+	v4l2_set_fmt(&drv, &fmt);
+	
+	printf(" set fmt  MJPEG ??....\n");
+	fmt.fmt.pix.pixelformat=0x47504a4d;
+	v4l2_set_fmt(&drv, &fmt);
+	
+	printf(" get fmt 2  ....\n");
+	v4l2_get_fmt(&drv, &fmt);
+	
+	drv.sizeimage =  
+	  fmt.fmt.pix.bytesperline
+	  * fmt.fmt.pix.height;
+	if (drv.sizeimage == 0) {
+	  drv.sizeimage=614400;
+	}
+	height = fmt.fmt.pix.height;
+	width = fmt.fmt.pix.width;
+	pixelformat = (uint32_t)fmt.fmt.pix.pixelformat;
+	
+	printf(" get cap  ....\n");
+	v4l2_gettryset_fmt_cap (&drv, V4L2_GET
+				, &fmt
+				, width
+				, height
+				, pixelformat
+				, V4L2_FIELD_ANY  );
+	num_buffers  = 4;
+	printf(" map buffers  ....\n");
+	rc  = v4l2_mmap_bufs(&drv, num_buffers);
+	if (rc != 0)
+	  {
+	    printf("v4l2_mmap_bufs error rc %d\n", rc);
+	    v4l2_close (&drv);
+	    continue;
+	  }
+	printf(" start stream  ....\n");
+	bad  =  0;
+	v4l2_start_streaming(&drv);
+	for (i=0; bad<100 && i< 32; i++)
+	  {
+	    printf(" recv #%d  ....", i);
+	    rc = v4l2_rcvbuf(&drv, NULL /*v4l2_recebe_buffer *rec_buf*/);
+	    printf(" rc = %d  ....\n", rc);
+	    if (rc == -16) 
+	      {
+		i--;
+		bad++;
+		usleep(1024 *10);
+	      }
+	  }
+	v4l2_stop_streaming(&drv);
+	v4l2_close (&drv);
+      }
+    return 0;
+}
+#endif
